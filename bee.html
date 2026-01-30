@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>小蜜蜂：星际突围</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Arial', sans-serif; }
+        #game-ui { position: absolute; top: 20px; left: 20px; color: #00f2ff; pointer-events: none; }
+        #health-wrap { width: 200px; height: 15px; border: 2px solid #00f2ff; border-radius: 10px; margin-top: 10px; }
+        #health-bar { width: 100%; height: 100%; background: #00f2ff; transition: width 0.3s; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="game-ui">
+    <div>得分: <span id="score">0</span></div>
+    <div>武器: <span id="weapon">标准脉冲</span></div>
+    <div id="health-wrap"><div id="health-bar"></div></div>
+</div>
+
+<div id="msg">
+    <div id="status"></div>
+    <button onclick="location.reload()" style="margin-top:20px; padding:10px 30px; background:#00f2ff; border:none; border-radius:5px;">重新出击</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** --- 音效合成器 --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSfx(freq, type='square', dur=0.1) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + dur);
+    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+/** --- 游戏逻辑 --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+let gameOver = false;
+let player = { x: canvas.width/2, y: canvas.height - 100, hp: 100, weapon: 'normal', r: 25 };
+let bullets = [], bees = [], powerups = [], particles = [];
+
+// 初始化 10x10 蜜蜂阵列
+function initBees() {
+    for(let r=0; r<6; r++) { // 为适配iPad屏幕高度，先设为6排，可自行调至10
+        for(let c=0; c<10; c++) {
+            bees.push({
+                originX: c * (canvas.width/12) + canvas.width/6,
+                originY: r * 50 + 80,
+                x: 0, y: 0,
+                width: 30, height: 30,
+                hp: 1,
+                phase: Math.random() * Math.PI * 2,
+                isDiving: false, // 是否正在俯冲攻击
+                diveX: 0, diveY: 0
+            });
+        }
+    }
+}
+
+// 绘制精致飞机
+function drawPlayer(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    // 机翼
+    ctx.fillStyle = '#00f2ff';
+    ctx.beginPath();
+    ctx.moveTo(-25, 10); ctx.lineTo(25, 10); ctx.lineTo(0, -25);
+    ctx.fill();
+    // 引擎火焰
+    ctx.fillStyle = Math.random() > 0.5 ? '#ff4d4d' : '#ffae42';
+    ctx.fillRect(-5, 10, 10, 15);
+    // 玻璃座舱
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(0, -5, 5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+// 绘制精致蜜蜂
+function drawBee(bee) {
+    ctx.save();
+    ctx.translate(bee.x, bee.y);
+    const scale = 1 + Math.sin(Date.now()/200) * 0.1; // 呼吸动画
+    // 翅膀
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath(); ctx.ellipse(-15*scale, 0, 10, 20, Math.PI/4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(15*scale, 0, 10, 20, -Math.PI/4, 0, Math.PI*2); ctx.fill();
+    // 身体
+    ctx.fillStyle = bee.isDiving ? '#ff4d4d' : '#ffd700';
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 15, 0, 0, Math.PI*2); ctx.fill();
+    // 斑纹
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-10, -3); ctx.lineTo(10, -3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-10, 5); ctx.lineTo(10, 5); ctx.stroke();
+    ctx.restore();
+}
+
+function update() {
+    if(gameOver) return;
+
+    // 阵列整体摆动
+    const offset = Math.sin(Date.now()/1000) * 50;
+
+    bees.forEach((bee, i) => {
+        if(!bee.isDiving) {
+            bee.x = bee.originX + offset;
+            bee.y = bee.originY;
+            // 随机触发俯冲攻击
+            if(Math.random() < 0.0005) {
+                bee.isDiving = true;
+                bee.diveX = (player.x - bee.x) / 60;
+            }
+        } else {
+            bee.y += 5;
+            bee.x += bee.diveX;
+            // 撞击玩家检测
+            if(Math.hypot(bee.x - player.x, bee.y - player.y) < 35) {
+                player.hp -= 20;
+                bees.splice(i, 1);
+                playSfx(100, 'sawtooth');
+            }
+            // 出界重置
+            if(bee.y > canvas.height) {
+                bee.isDiving = false;
+                bee.y = bee.originY;
+            }
+        }
+    });
+
+    // 子弹更新
+    bullets.forEach((b, bi) => {
+        b.y -= 10;
+        bees.forEach((bee, ei) => {
+            if(Math.hypot(b.x - bee.x, b.y - bee.y) < 25) {
+                playSfx(600, 'sine', 0.05);
+                bees.splice(ei, 1);
+                if(b.type !== 'laser') bullets.splice(bi, 1);
+                score += 100;
+                // 掉落道具
+                if(Math.random() < 0.1) powerups.push({x: bee.x, y: bee.y, type: Math.random() > 0.5 ? 'spread' : 'laser'});
+            }
+        });
+    });
+
+    // 道具更新
+    powerups.forEach((p, pi) => {
+        p.y += 3;
+        if(Math.hypot(p.x - player.x, p.y - player.y) < 30) {
+            player.weapon = p.type;
+            document.getElementById('weapon').innerText = p.type === 'spread' ? '三叉散射' : '高能激光';
+            powerups.splice(pi, 1);
+            playSfx(800, 'sine', 0.2);
+            setTimeout(() => { player.weapon = 'normal'; document.getElementById('weapon').innerText = '标准脉冲'; }, 8000);
+        }
+    });
+
+    if(player.hp <= 0) {
+        gameOver = true;
+        document.getElementById('msg').style.display = 'block';
+        document.getElementById('status').innerText = "战机坠毁！得分: " + score;
+    }
+
+    document.getElementById('score').innerText = score;
+    document.getElementById('health-bar').style.width = player.hp + '%';
+}
+
+function draw() {
+    ctx.fillStyle = '#000311';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // 星空背景
+    ctx.fillStyle = '#fff';
+    for(let i=0; i<20; i++) ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
+
+    bees.forEach(drawBee);
+    bullets.forEach(b => {
+        ctx.fillStyle = b.type === 'laser' ? '#00f2ff' : '#fff';
+        ctx.fillRect(b.x-2, b.y, 4, 15);
+    });
+    powerups.forEach(p => {
+        ctx.fillStyle = p.type === 'spread' ? '#ff00ff' : '#00f2ff';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
+    });
+    drawPlayer(player.x, player.y);
+}
+
+// iPad 交互：滑动控制
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    player.x = e.touches[0].clientX;
+}, {passive: false});
+
+// 点击射击
+canvas.addEventListener('touchstart', e => {
+    if(player.weapon === 'normal') {
+        bullets.push({x: player.x, y: player.y - 20, type: 'normal'});
+    } else if(player.weapon === 'spread') {
+        bullets.push({x: player.x, y: player.y - 20, type: 'normal'});
+        bullets.push({x: player.x - 15, y: player.y - 20, type: 'normal'});
+        bullets.push({x: player.x + 15, y: player.y - 20, type: 'normal'});
+    } else if(player.weapon === 'laser') {
+        bullets.push({x: player.x, y: player.y - 20, type: 'laser'});
+    }
+    playSfx(400);
+});
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+initBees();
+loop();
+</script>
+</body>
+</html>
