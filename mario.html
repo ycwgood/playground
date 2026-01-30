@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>托马斯大冒险 - 像素关卡</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #5c94fc; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
+        .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
+        .btn { width: 80px; height: 80px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; -webkit-user-select: none; }
+        .btn:active { background: rgba(255,255,255,0.6); }
+    </style>
+</head>
+<body>
+
+<div id="ui">金币: <span id="score">0</span></div>
+
+<div class="controls">
+    <div style="display:flex; gap: 20px;">
+        <div class="btn" id="btnLeft">←</div>
+        <div class="btn" id="btnRight">→</div>
+    </div>
+    <div class="btn" id="btnJump" style="width: 100px; height: 100px; background: rgba(255,71,87,0.5);">跳</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** --- 音效合成器 (Web Audio API) --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'jump') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'coin') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(900, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    }
+}
+
+/** --- 游戏引擎 --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const gravity = 0.8;
+const friction = 0.8;
+let score = 0;
+
+const player = {
+    x: 100, y: 100,
+    width: 30, height: 40,
+    vx: 0, vy: 0,
+    speed: 5,
+    jumpStrength: -15,
+    grounded: false,
+    color: '#ff4757'
+};
+
+// 简单的关卡设计: 平台和金币
+const platforms = [
+    { x: 0, y: canvas.height - 50, w: 2000, h: 50 }, // 地面
+    { x: 300, y: canvas.height - 180, w: 150, h: 20 },
+    { x: 550, y: canvas.height - 300, w: 150, h: 20 },
+    { x: 800, y: canvas.height - 200, w: 200, h: 20 },
+    { x: 1100, y: canvas.height - 350, w: 150, h: 20 }
+];
+
+let coins = [
+    { x: 350, y: canvas.height - 220, r: 10, collected: false },
+    { x: 600, y: canvas.height - 340, r: 10, collected: false },
+    { x: 900, y: canvas.height - 240, r: 10, collected: false }
+];
+
+// 控制状态
+const keys = { left: false, right: false, jump: false };
+
+// 绑定 iPad 按钮事件
+const bindBtn = (id, key) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; if(key==='jump') tryJump(); });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+};
+bindBtn('btnLeft', 'left');
+bindBtn('btnRight', 'right');
+bindBtn('btnJump', 'jump');
+
+function tryJump() {
+    if (player.grounded) {
+        player.vy = player.jumpStrength;
+        player.grounded = false;
+        playSound('jump');
+    }
+}
+
+function update() {
+    // 左右移动逻辑
+    if (keys.right) { if (player.vx < player.speed) player.vx++; }
+    if (keys.left) { if (player.vx > -player.speed) player.vx--; }
+    
+    player.vx *= friction;
+    player.vy += gravity;
+
+    player.grounded = false;
+
+    // 平台碰撞检测
+    for (let p of platforms) {
+        // 简易 AABB 碰撞
+        if (player.x < p.x + p.w && player.x + player.width > p.x &&
+            player.y + player.height > p.y && player.y + player.height < p.y + p.h + player.vy) {
+            player.vy = 0;
+            player.y = p.y - player.height;
+            player.grounded = true;
+        }
+    }
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // 金币碰撞
+    coins.forEach(c => {
+        if (!c.collected && Math.hypot(player.x + 15 - c.x, player.y + 20 - c.y) < 25) {
+            c.collected = true;
+            score += 1;
+            document.getElementById('score').innerText = score;
+            playSound('coin');
+        }
+    });
+
+    // 屏幕边界限制 (简单的摄像机跟随效果可以通过平移画布实现，这里先做固定边界)
+    if (player.x < 0) player.x = 0;
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 画背景（云朵）
+    ctx.fillStyle = "white";
+    ctx.beginPath(); ctx.arc(200, 100, 30, 0, Math.PI*2); ctx.fill();
+
+    // 画平台
+    ctx.fillStyle = "#8B4513";
+    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+    // 画金币
+    ctx.fillStyle = "gold";
+    coins.forEach(c => {
+        if (!c.collected) {
+            ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+        }
+    });
+
+    // 画玩家
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// 必须由用户交互启动音频环境
+window.addEventListener('touchstart', () => {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+
+loop();
+</script>
+</body>
+</html>
