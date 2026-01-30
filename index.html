@@ -18,31 +18,32 @@
 
         body {
             margin: 0;
-            overflow: hidden; /* 隐藏溢出的背景粒子 */
-            font-family: 'Orbitron', sans-serif; /* 科技感字体 */
+            /* 1. 允许垂直滚动，隐藏水平滚动 */
+            overflow-y: auto; 
+            overflow-x: hidden;
+            font-family: 'Orbitron', sans-serif;
             color: white;
             background: radial-gradient(circle at top left, var(--dark-gradient-start) 0%, var(--dark-gradient-end) 100%);
+            /* 2. 移除 height: 100vh，改为 min-height 让内容撑开页面 */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             position: relative;
-            touch-action: manipulation; /* 优化触屏 */
-            -webkit-touch-callout: none; /* iOS Safari 禁止长按弹出菜单 */
-            -webkit-user-select: none; /* iOS Safari 禁止文本选择 */
+            /* 3. 允许触屏滚动 */
+            touch-action: pan-y; 
+            padding-bottom: 50px; /* 底部留白，更美观 */
         }
 
-        /* 动态背景粒子 */
+        /* 确保背景粒子依然固定在屏幕，不随滚动条走动 */
         .background-particles {
-            position: absolute;
+            position: fixed; /* 关键：改为 fixed */
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
             z-index: -1;
             pointer-events: none;
-            overflow: hidden;
         }
         .background-particles::before,
         .background-particles::after {
@@ -70,9 +71,10 @@
         }
 
         h1 {
+            margin-top: 60px;
+            margin-bottom: 40px;
             font-size: 3.5em; /* 更大的标题 */
             text-align: center;
-            margin-bottom: 60px;
             color: var(--primary-color);
             text-shadow: 0 0 15px var(--primary-color), 0 0 30px var(--primary-color);
             letter-spacing: 5px;
