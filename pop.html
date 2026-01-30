@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>梦幻泡泡 - 治愈系</title>
+    <style>
+        :root {
+            --bg-color: #fce4ec; /* 浅粉色背景 */
+        }
+        body { margin: 0; overflow: hidden; background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        canvas { display: block; filter: blur(0.5px); }
+        #ui {
+            position: absolute; top: 20px; left: 0; width: 100%; text-align: center;
+            color: #888; pointer-events: none; letter-spacing: 2px;
+        }
+        #score { font-size: 32px; color: #ff80ab; font-weight: 300; }
+        .hint { font-size: 14px; margin-top: 5px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div id="score">0</div>
+    <div class="hint">戳破泡泡，收集好心情</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** --- 治愈系音效系统 --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // 纯净的五声调式
+
+function playPopSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine'; // 柔和的正弦波
+    const freq = notes[Math.floor(Math.random() * notes.length)];
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
+/** --- 游戏核心 --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+let bubbles = [];
+const colors = [
+    'rgba(255, 182, 193, 0.6)', // 浅粉
+    'rgba(173, 216, 230, 0.6)', // 浅蓝
+    'rgba(255, 255, 224, 0.6)', // 浅黄
+    'rgba(221, 160, 221, 0.6)', // 洋李色
+    'rgba(144, 238, 144, 0.6)'  // 浅绿
+];
+
+class Bubble {
+    constructor() {
+        this.r = Math.random() * 40 + 30;
+        this.x = Math.random() * (canvas.width - this.r * 2) + this.r;
+        this.y = canvas.height + this.r + Math.random() * 100;
+        this.speed = Math.random() * 1 + 0.5;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.vx = Math.sin(Math.random() * Math.PI) * 0.5; // 轻微左右晃动
+        this.isPopping = false;
+        this.popScale = 1;
+    }
+
+    update() {
+        if (this.isPopping) {
+            this.popScale += 0.2;
+            this.r += 2;
+        } else {
+            this.y -= this.speed;
+            this.x += Math.sin(this.y / 50) * 0.5;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.beginPath();
+        ctx.globalAlpha = this.isPopping ? (2 - this.popScale) : 1;
+        
+        // 泡泡主体
+        const grad = ctx.createRadialGradient(this.x-this.r/3, this.y-this.r/3, this.r/4, this.x, this.y, this.r);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        grad.addColorStop(1, this.color);
+        
+        ctx.fillStyle = grad;
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 泡泡高光
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.arc(this.x - this.r/2.5, this.y - this.r/2.5, this.r/5, 0, Math.PI*2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+function handleInteraction(ex, ey) {
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+        const b = bubbles[i];
+        if (!b.isPopping && Math.hypot(ex - b.x, ey - b.y) < b.r + 10) {
+            b.isPopping = true;
+            score++;
+            document.getElementById('score').innerText = score;
+            playPopSound();
+            // 延迟删除
+            setTimeout(() => {
+                const index = bubbles.indexOf(b);
+                if (index > -1) bubbles.splice(index, 1);
+            }, 150);
+            break;
+        }
+    }
+}
+
+// 适配 iPad 触摸
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleInteraction(touch.clientX, touch.clientY);
+}, { passive: false });
+
+canvas.addEventListener('mousedown', (e) => {
+    handleInteraction(e.clientX, e.clientY);
+});
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (Math.random() < 0.03 && bubbles.length < 15) {
+        bubbles.push(new Bubble());
+    }
+
+    bubbles.forEach((b, i) => {
+        b.update();
+        b.draw();
+        if (b.y < -b.r * 2) bubbles.splice(i, 1);
+    });
+
+    requestAnimationFrame(animate);
+}
+
+// 窗口自适应
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+animate();
+</script>
+</body>
+</html>
