@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>末日堡垒 - 触屏双摇杆射击</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #333; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; background: #6B8E23; /* 模拟大地颜色 */ }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px 2px #000; pointer-events: none; font-size: 1.2em; }
+        #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-size: 2em; display: none; }
+        button { padding: 15px 30px; font-size: 20px; background: #ff4757; color: white; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div>生命: <span id="playerHealth">100</span></div>
+    <div>分数: <span id="score">0</span></div>
+    <div>波数: <span id="wave">1</span></div>
+</div>
+
+<div id="gameover">
+    <h1>游戏结束!</h1>
+    <button onclick="resetGame()">重新开始</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    r: 15,
+    speed: 3,
+    health: 100,
+    maxHealth: 100,
+    color: '#007bff',
+    direction: 0, // 射击方向，弧度
+    shootCooldown: 0,
+    maxShootCooldown: 20, // 射击间隔
+    bulletSpeed: 7,
+    bulletDamage: 10,
+};
+
+let bullets = [];
+let enemies = [];
+let obstacles = [];
+let score = 0;
+let wave = 1;
+let lastEnemySpawn = 0;
+let enemySpawnInterval = 1500;
+let isGameOver = false;
+
+// 虚拟摇杆状态
+let moveJoystick = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, radius: 60 };
+let shootJoystick = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, radius: 60 };
+
+// 游戏配置
+const config = {
+    enemyBaseSpeed: 1,
+    enemyBaseHealth: 20,
+    maxObstacles: 5,
+    waveDuration: 20 * 1000, // 每波持续时间
+    waveInterval: 5 * 1000, // 波次间隔
+    lastWaveChange: 0
+};
+
+// --- 工具函数 ---
+function distance(x1, y1, x2, y2) {
+    return Math.hypot(x1 - x2, y1 - y2);
+}
+
+function randomPosNearEdge(margin = 50) {
+    const edge = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+    let x, y;
+    if (edge === 0) { // top
+        x = Math.random() * canvas.width;
+        y = -margin;
+    } else if (edge === 1) { // right
+        x = canvas.width + margin;
+        y = Math.random() * canvas.height;
+    } else if (edge === 2) { // bottom
+        x = Math.random() * canvas.width;
+        y = canvas.height + margin;
+    } else { // left
+        x = -margin;
+        y = Math.random() * canvas.height;
+    }
+    return { x, y };
+}
+
+// --- 游戏对象类 ---
+class Bullet {
+    constructor(x, y, angle, speed, damage) {
+        this.x = x;
+        this.y = y;
+        this.r = 3;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.damage = damage;
+        this.color = 'yellow';
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+class Enemy {
+    constructor() {
+        const spawnPoint = randomPosNearEdge(50);
+        this.x = spawnPoint.x;
+        this.y = spawnPoint.y;
+        this.r = 12;
+        this.speed = config.enemyBaseSpeed * (1 + (wave * 0.1)); // 随波次加速
+        this.health = config.enemyBaseHealth * (1 + (wave * 0.2)); // 随波次增血
+        this.maxHealth = this.health;
+        this.color = 'red';
+        this.vx = 0;
+        this.vy = 0;
+        this.driftFactor = Math.random() * 0.05 + 0.01; // 随机漂移因子
+        this.targetAngle = 0; // 目标角度，用于随机漂移
+    }
+
+    update() {
+        // 计算目标方向（朝向玩家）
+        const angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
+
+        // 引入随机漂移：随机改变目标角度
+        this.targetAngle += (Math.random() - 0.5) * this.driftFactor; // 小范围随机改变
+        this.targetAngle = angleToPlayer + (Math.sin(this.targetAngle) * 0.5); // 结合目标角度和随机性
+
+        this.vx = Math.cos(this.targetAngle) * this.speed;
+        this.vy = Math.sin(this.targetAngle) * this.speed;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // 与障碍物碰撞检测
+        obstacles.forEach(obstacle => {
+            const dx = this.x - obstacle.x;
+            const dy = this.y - obstacle.y;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist < this.r + obstacle.r) {
+                // 简单的反弹逻辑，可以更复杂
+                const overlap = (this.r + obstacle.r) - dist;
+                this.x += (dx / dist) * overlap;
+                this.y += (dy / dist) * overlap;
+            }
+        });
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 血条
+        ctx.fillStyle = 'darkgray';
+        ctx.fillRect(this.x - this.r, this.y - this.r - 8, this.r * 2, 4);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(this.x - this.r, this.y - this.r - 8, (this.health / this.maxHealth) * this.r * 2, 4);
+    }
+}
+
+class Obstacle {
+    constructor(x, y, r) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.color = '#8B4513'; // 棕色
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// --- 初始化障碍物 ---
+function generateObstacles() {
+    obstacles = [];
+    for (let i = 0; i < config.maxObstacles; i++) {
+        let safeSpawn = false;
+        let newX, newY, newR;
+        while (!safeSpawn) {
+            newR = Math.random() * 30 + 30; // 障碍物大小
+            newX = Math.random() * (canvas.width - newR * 2) + newR;
+            newY = Math.random() * (canvas.height - newR * 2) + newR;
+
+            // 确保不生成在玩家初始位置附近
+            if (distance(newX, newY, player.x, player.y) > player.r + newR + 100) {
+                safeSpawn = true;
+            }
+        }
+        obstacles.push(new Obstacle(newX, newY, newR));
+    }
+}
+generateObstacles();
+
+// --- 游戏循环 ---
+function animate(timestamp) {
+    if (isGameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 绘制 UI (生命、分数、波数)
+    document.getElementById('playerHealth').innerText = player.health;
+    document.getElementById('score').innerText = score;
+    document.getElementById('wave').innerText = wave;
+
+    // --- 玩家移动 ---
+    if (moveJoystick.active) {
+        const dx = moveJoystick.currentX - moveJoystick.startX;
+        const dy = moveJoystick.currentY - moveJoystick.startY;
+        const mag = Math.hypot(dx, dy);
+
+        if (mag > 0) {
+            const moveX = (dx / mag) * player.speed;
+            const moveY = (dy / mag) * player.speed;
+            player.x += moveX;
+            player.y += moveY;
+
+            // 玩家与障碍物碰撞
+            obstacles.forEach(obstacle => {
+                const dist = distance(player.x, player.y, obstacle.x, obstacle.y);
+                if (dist < player.r + obstacle.r) {
+                    const overlap = (player.r + obstacle.r) - dist;
+                    player.x -= (moveX / player.speed) * overlap; // 反推回
+                    player.y -= (moveY / player.speed) * overlap;
+                }
+            });
+
+            // 边界限制
+            player.x = Math.max(player.r, Math.min(canvas.width - player.r, player.x));
+            player.y = Math.max(player.r, Math.min(canvas.height - player.r, player.y));
+        }
+    }
+
+    // --- 玩家射击 ---
+    if (shootJoystick.active && player.shootCooldown <= 0) {
+        const dx = shootJoystick.currentX - shootJoystick.startX;
+        const dy = shootJoystick.currentY - shootJoystick.startY;
+        const mag = Math.hypot(dx, dy);
+
+        if (mag > 0) {
+            player.direction = Math.atan2(dy, dx);
+            bullets.push(new Bullet(player.x, player.y, player.direction, player.bulletSpeed, player.bulletDamage));
+            player.shootCooldown = player.maxShootCooldown;
+        }
+    }
+    if (player.shootCooldown > 0) player.shootCooldown--;
+
+    // --- 更新子弹 ---
+    bullets.forEach((bullet, index) => {
+        bullet.update();
+        bullet.draw();
+
+        // 子弹与敌人碰撞
+        enemies.forEach((enemy, enemyIndex) => {
+            if (distance(bullet.x, bullet.y, enemy.x, enemy.y) < bullet.r + enemy.r) {
+                enemy.health -= bullet.damage;
+                if (enemy.health <= 0) {
+                    enemies.splice(enemyIndex, 1);
+                    score += 10;
+                }
+                bullets.splice(index, 1); // 销毁子弹
+            }
+        });
+
+        // 子弹是否出界
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+            bullets.splice(index, 1);
+        }
+    });
+
+    // --- 更新敌人 ---
+    if (timestamp - lastEnemySpawn > enemySpawnInterval / Math.sqrt(wave)) { // 随波数加快生成
+        enemies.push(new Enemy());
+        lastEnemySpawn = timestamp;
+    }
+
+    enemies.forEach((enemy, index) => {
+        enemy.update();
+        enemy.draw();
+
+        // 敌人与玩家碰撞
+        if (distance(enemy.x, enemy.y, player.x, player.y) < enemy.r + player.r) {
+            player.health -= 1; // 持续掉血
+            if (player.health <= 0) {
+                endGame();
+            }
+        }
+    });
+
+    // --- 波次管理 ---
+    if (timestamp - config.lastWaveChange > config.waveDuration) {
+        wave++;
+        config.lastWaveChange = timestamp;
+        enemySpawnInterval = Math.max(200, enemySpawnInterval - 50); // 最小间隔200ms
+        console.log(`波次 ${wave} 来袭!`);
+    }
+
+    // --- 绘制障碍物 ---
+    obstacles.forEach(obstacle => obstacle.draw());
+
+    // --- 绘制玩家 ---
+    ctx.fillStyle = player.color;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 绘制玩家朝向指示 (射击方向)
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y);
+    ctx.lineTo(player.x + Math.cos(player.direction) * (player.r + 10), player.y + Math.sin(player.direction) * (player.r + 10));
+    ctx.stroke();
+
+    // 绘制虚拟摇杆
+    drawJoystick(moveJoystick, canvas.width / 4, canvas.height - canvas.height / 4);
+    drawJoystick(shootJoystick, canvas.width - canvas.width / 4, canvas.height - canvas.height / 4);
+
+    requestAnimationFrame(animate);
+}
+
+function drawJoystick(joystick, baseX, baseY) {
+    if (!joystick.active) {
+        // 绘制静止时的外圈
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(baseX, baseY, joystick.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        return;
+    }
+
+    // 绘制摇杆外圈
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(joystick.startX, joystick.startY, joystick.radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 绘制摇杆内圈
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.arc(joystick.currentX, joystick.currentY, joystick.radius / 2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+
+// --- 触摸事件处理 ---
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // 阻止默认的滚动和缩放行为
+    for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        if (touch.clientX < canvas.width / 2 && !moveJoystick.active) { // 左侧区域
+            moveJoystick.active = true;
+            moveJoystick.startX = touch.clientX;
+            moveJoystick.startY = touch.clientY;
+            moveJoystick.currentX = touch.clientX;
+            moveJoystick.currentY = touch.clientY;
+        } else if (touch.clientX >= canvas.width / 2 && !shootJoystick.active) { // 右侧区域
+            shootJoystick.active = true;
+            shootJoystick.startX = touch.clientX;
+            shootJoystick.startY = touch.clientY;
+            shootJoystick.currentX = touch.clientX;
+            shootJoystick.currentY = touch.clientY;
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // 阻止默认的滚动和缩放行为
+    for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        if (moveJoystick.active && distance(touch.clientX, touch.clientY, moveJoystick.startX, moveJoystick.startY) < moveJoystick.radius * 2) { // 检查是否在移动摇杆的活动范围内
+            moveJoystick.currentX = touch.clientX;
+            moveJoystick.currentY = touch.clientY;
+            // 限制摇杆不能超出范围
+            const dist = distance(moveJoystick.startX, moveJoystick.startY, moveJoystick.currentX, moveJoystick.currentY);
+            if (dist > moveJoystick.radius) {
+                const angle = Math.atan2(moveJoystick.currentY - moveJoystick.startY, moveJoystick.currentX - moveJoystick.startX);
+                moveJoystick.currentX = moveJoystick.startX + Math.cos(angle) * moveJoystick.radius;
+                moveJoystick.currentY = moveJoystick.startY + Math.sin(angle) * moveJoystick.radius;
+            }
+        } else if (shootJoystick.active && distance(touch.clientX, touch.clientY, shootJoystick.startX, shootJoystick.startY) < shootJoystick.radius * 2) { // 检查是否在射击摇杆的活动范围内
+            shootJoystick.currentX = touch.clientX;
+            shootJoystick.currentY = touch.clientY;
+            // 限制摇杆不能超出范围
+            const dist = distance(shootJoystick.startX, shootJoystick.startY, shootJoystick.currentX, shootJoystick.currentY);
+            if (dist > shootJoystick.radius) {
+                const angle = Math.atan2(shootJoystick.currentY - shootJoystick.startY, shootJoystick.currentX - shootJoystick.startX);
+                shootJoystick.currentX = shootJoystick.startX + Math.cos(angle) * shootJoystick.radius;
+                shootJoystick.currentY = shootJoystick.startY + Math.sin(angle) * shootJoystick.radius;
+            }
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (moveJoystick.active && distance(touch.clientX, touch.clientY, moveJoystick.currentX, moveJoystick.currentY) < 20) { // 简单判断是否是释放的摇杆
+            moveJoystick.active = false;
+        }
+        if (shootJoystick.active && distance(touch.clientX, touch.clientY, shootJoystick.currentX, shootJoystick.currentY) < 20) { // 简单判断是否是释放的摇杆
+            shootJoystick.active = false;
+        }
+    }
+});
+
+// 游戏结束
+function endGame() {
+    isGameOver = true;
+    document.getElementById('gameover').style.display = 'block';
+}
+
+// 重置游戏
+function resetGame() {
+    location.reload(); // 最简单粗暴的重置方法
+}
+
+// 窗口大小调整
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    player.x = canvas.width / 2;
+    player.y = canvas.height / 2;
+    generateObstacles(); // 重新生成障碍物
+});
+
+// 启动游戏
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
