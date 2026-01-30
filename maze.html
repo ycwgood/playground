@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>托马斯 3D 空间 - 第一人称</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; }
+        
+        /* 3D 视口容器 */
+        #viewport {
+            width: 100vw; height: 100vh;
+            perspective: 600px; /* 镜头焦距 */
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 3D 世界盒子 */
+        #world {
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.05s linear;
+        }
+
+        /* 墙壁通用样式 */
+        .wall {
+            position: absolute;
+            width: 1000px; height: 1000px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 5px solid #00f2ff;
+            box-shadow: 0 0 20px #00f2ff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 50px; color: #00f2ff;
+        }
+
+        /* 准星 */
+        #crosshair {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00f2ff; font-size: 24px; pointer-events: none;
+        }
+
+        #ui {
+            position: fixed; top: 20px; left: 20px; color: #00f2ff;
+            text-shadow: 0 0 10px #00f2ff; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui">分数: <span id="score">0</span> | 目标: 寻找红色方块</div>
+<div id="crosshair">+</div>
+
+<div id="viewport">
+    <div id="world">
+        <div class="wall" style="transform: rotateX(90deg) translateZ(-500px); background: repeating-linear-gradient(0deg, transparent, transparent 48px, #00f2ff 50px), repeating-linear-gradient(90deg, transparent, transparent 48px, #00f2ff 50px);"></div>
+        <div class="wall" style="transform: translateZ(-1500px);">1号走廊</div>
+        <div class="wall" style="transform: rotateY(90deg) translateZ(-1000px);">左墙</div>
+        <div class="wall" style="transform: rotateY(-90deg) translateZ(-1000px);">右墙</div>
+        <div class="wall" style="transform: rotateY(180deg) translateZ(-1500px);">后墙</div>
+        
+        <div id="target" class="wall" style="width: 200px; height: 200px; background: red; border-color: #ff0000; box-shadow: 0 0 30px #ff0000; transform: translateZ(-1200px) translateX(200px);">摧毁</div>
+    </div>
+</div>
+
+<script>
+    const world = document.getElementById('world');
+    const target = document.getElementById('target');
+    const scoreEl = document.getElementById('score');
+
+    let x = 0, y = 0, z = 0; // 玩家坐标
+    let rotateY = 0; // 左右视角
+    let score = 0;
+
+    // 触摸变量
+    let touchStartX = 0, touchStartY = 0;
+
+    // iPad 操控逻辑
+    document.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        
+        // 判定双指点击为“射击”
+        if (e.touches.length > 1) shoot();
+    });
+
+    document.addEventListener('touchmove', e => {
+        const touchX = e.touches[0].clientX;
+        const touchY = e.touches[0].clientY;
+
+        const deltaX = touchX - touchStartX;
+        const deltaY = touchY - touchStartY;
+
+        if (touchStartX < window.innerWidth / 2) {
+            // 左半屏：移动 (前后)
+            z += deltaY * 0.5;
+        } else {
+            // 右半屏：转头 (左右)
+            rotateY += deltaX * 0.2;
+        }
+
+        updateWorld();
+        touchStartX = touchX;
+        touchStartY = touchY;
+        e.preventDefault();
+    }, { passive: false });
+
+    function updateWorld() {
+        // CSS 3D 的核心：玩家前进，世界就要向后退
+        world.style.transform = `translateZ(${z}px) rotateY(${-rotateY}deg) translateX(${-x}px)`;
+    }
+
+    function shoot() {
+        // 简易射击判断：视角对准且距离足够
+        // 这里简化为：当你在特定范围内点击即得分并重置目标
+        score++;
+        scoreEl.innerText = score;
+        
+        // 随机移动目标
+        const newX = (Math.random() - 0.5) * 1000;
+        const newZ = -1000 - Math.random() * 1000;
+        target.style.transform = `translateZ(${newZ}px) translateX(${newX}px)`;
+        
+        // 震动反馈 (如果 iPad 支持)
+        if (navigator.vibrate) navigator.vibrate(50);
+    }
+
+    // 键盘支持 (方便电脑测试)
+    document.addEventListener('keydown', e => {
+        if (e.key === 'w') z += 50;
+        if (e.key === 's') z -= 50;
+        if (e.key === 'a') rotateY -= 5;
+        if (e.key === 'd') rotateY += 5;
+        if (e.key === ' ') shoot();
+        updateWorld();
+    });
+
+</script>
+</body>
+</html>
