@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>托马斯的游乐场</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Press+Start+2P&display=swap');
+
+        :root {
+            --primary-color: #00bcd4; /* 青色 */
+            --secondary-color: #ff4081; /* 粉色 */
+            --dark-bg: #1a1a2e; /* 更深的背景 */
+            --dark-gradient-start: #121221;
+            --dark-gradient-end: #0a0a15;
+            --card-bg: rgba(25, 25, 45, 0.7); /* 卡片背景 */
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden; /* 隐藏溢出的背景粒子 */
+            font-family: 'Orbitron', sans-serif; /* 科技感字体 */
+            color: white;
+            background: radial-gradient(circle at top left, var(--dark-gradient-start) 0%, var(--dark-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            touch-action: manipulation; /* 优化触屏 */
+            -webkit-touch-callout: none; /* iOS Safari 禁止长按弹出菜单 */
+            -webkit-user-select: none; /* iOS Safari 禁止文本选择 */
+        }
+
+        /* 动态背景粒子 */
+        .background-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .background-particles::before,
+        .background-particles::after {
+            content: '';
+            position: absolute;
+            background: radial-gradient(circle, rgba(0, 188, 212, 0.3) 0%, rgba(0, 188, 212, 0) 70%);
+            border-radius: 50%;
+            animation: particle-move 20s infinite alternate;
+        }
+        .background-particles::before {
+            width: 300px; height: 300px;
+            top: 10%; left: 15%;
+            animation-duration: 25s;
+        }
+        .background-particles::after {
+            width: 400px; height: 400px;
+            top: 70%; left: 80%;
+            animation-duration: 20s;
+            background: radial-gradient(circle, rgba(255, 64, 129, 0.3) 0%, rgba(255, 64, 129, 0) 70%);
+        }
+        @keyframes particle-move {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            50% { transform: translate(50px, 50px) scale(1.2); opacity: 0.6; }
+            100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+        }
+
+        h1 {
+            font-size: 3.5em; /* 更大的标题 */
+            text-align: center;
+            margin-bottom: 60px;
+            color: var(--primary-color);
+            text-shadow: 0 0 15px var(--primary-color), 0 0 30px var(--primary-color);
+            letter-spacing: 5px;
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color), 0 0 30px var(--primary-color); }
+            100% { text-shadow: 0 0 15px var(--primary-color), 0 0 25px var(--primary-color), 0 0 40px var(--primary-color); }
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 响应式布局 */
+            gap: 40px; /* 卡片间距 */
+            max-width: 1200px;
+            padding: 20px;
+            width: 90%;
+            box-sizing: border-box;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid rgba(0, 188, 212, 0.2);
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.1), 0 0 40px rgba(0, 188, 212, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none; /* 移除链接下划线 */
+            color: inherit; /* 继承父元素颜色 */
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.03); /* 鼠标悬停上浮 */
+            border-color: var(--primary-color);
+            box-shadow: 0 0 30px var(--primary-color), 0 0 60px rgba(0, 188, 212, 0.2);
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(0, 188, 212, 0.1) 0%, rgba(255, 64, 129, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .game-card:hover::before {
+            opacity: 1; /* 悬停时渐变背景出现 */
+        }
+
+        .game-card h2 {
+            font-family: 'Press Start 2P', cursive; /* 像素游戏字体 */
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            text-shadow: 0 0 8px var(--secondary-color);
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-card p {
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #ccc;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5em;
+                margin-bottom: 40px;
+            }
+            .game-grid {
+                grid-template-columns: 1fr; /* 小屏幕下卡片垂直堆叠 */
+                gap: 30px;
+            }
+            .game-card {
+                padding: 25px;
+            }
+            .game-card h2 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-particles"></div>
+
+    <h1>托马斯的游乐场</h1>
+
+    <div class="game-grid">
+        <a href="duck_hunt.html" class="game-card">
+            <h2>打鸭子</h2>
+            <p>经典复古射击游戏！瞄准并射击那些快速飞过的小鸭子，挑战你的反应极限。随着关卡提升，小鸭子会变得更快更狡猾！</p>
+        </a>
+
+        <a href="top_down_shooter.html" class="game-card">
+            <h2>末日堡垒</h2>
+            <p>俯视角生存射击！在四面八方涌来的敌人中生存下来，利用虚拟摇杆移动和射击。合理利用掩体，成为最后的生还者！</p>
+        </a>
+    </div>
+</body>
+</html>
