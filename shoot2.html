@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>兵临城下 2.0 - 托马斯定制版</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; background: #2d3436; }
+        
+        /* UI 样式 */
+        #ui-layer { position: absolute; top: 10px; left: 10px; right: 10px; color: white; pointer-events: none; }
+        .health-bar-container { width: 200px; height: 20px; background: #444; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
+        #health-fill { width: 100%; height: 100%; background: #ff4757; transition: width 0.3s; }
+        
+        #settings { position: absolute; top: 10px; right: 10px; pointer-events: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; color: white; }
+        input[type=range] { width: 100px; vertical-align: middle; }
+
+        #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; display: none; background: rgba(0,0,0,0.8); padding: 40px; border-radius: 20px; }
+        button { padding: 15px 30px; font-size: 20px; background: #2ecc71; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <div class="health-bar-container"><div id="health-fill"></div></div>
+    <div style="margin-top:5px;">分数: <span id="score">0</span> | 弹药: <span id="ammo-type">常规</span></div>
+</div>
+
+<div id="settings">
+    射速: <input type="range" id="fireRateRange" min="5" max="50" value="20">
+</div>
+
+<div id="gameover">
+    <h1>你英勇牺牲了</h1>
+    <p>最终得分: <span id="final-score">0</span></p>
+    <button onclick="location.reload()">重新集结</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** --- 音效合成 (AudioCtx) --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSfx(freq, type='square', duration=0.1, vol=0.1) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+
+/** --- 游戏引擎 --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const WORLD_SIZE = 3000; // 地图大小 (3000x3000px)
+let score = 0;
+let isGameOver = false;
+
+// 玩家对象
+const player = {
+    x: WORLD_SIZE/2, y: WORLD_SIZE/2,
+    r: 20, health: 100, maxHealth: 100,
+    speed: 5, bulletType: 'normal',
+    color: '#0984e3',
+    shootTimer: 0
+};
+
+let bullets = [];
+let enemies = [];
+let powerups = [];
+let obstacles = [];
+
+// 初始化一些随机掩体
+for(let i=0; i<30; i++) {
+    obstacles.push({
+        x: Math.random()*WORLD_SIZE, 
+        y: Math.random()*WORLD_SIZE, 
+        r: 30 + Math.random()*50
+    });
+}
+
+// 触摸摇杆逻辑
+let moveJoystick = { active: false, x: 0, y: 0, currX: 0, currY: 0 };
+let shootJoystick = { active: false, x: 0, y: 0, currX: 0, currY: 0 };
+
+/** --- 子弹类 --- **/
+class Bullet {
+    constructor(x, y, angle, type='normal') {
+        this.x = x; this.y = y; this.angle = angle; this.type = type;
+        this.speed = 10; this.life = 100;
+        this.r = (type === 'mega') ? 15 : 4;
+        playSfx(type==='mega'? 100 : 400);
+    }
+    update() {
+        if(this.type === 'spin') {
+            this.angle += 0.1;
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+        } else {
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+        }
+        this.life--;
+    }
+    draw(camX, camY) {
+        ctx.fillStyle = this.type === 'mega' ? '#fdcb6e' : '#ffff00';
+        ctx.beginPath();
+        ctx.arc(this.x - camX, this.y - camY, this.r, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+/** --- 道具类 --- **/
+class PowerUp {
+    constructor(x, y) {
+        this.x = x; this.y = y; this.r = 15;
+        const types = ['heal', 'mega', 'spread', 'spin'];
+        this.type = types[Math.floor(Math.random()*types.length)];
+    }
+    draw(camX, camY) {
+        const colors = { heal: '#2ecc71', mega: '#e67e22', spread: '#9b59b6', spin: '#f1c40f' };
+        ctx.fillStyle = colors[this.type];
+        ctx.beginPath();
+        ctx.arc(this.x - camX, this.y - camY, this.r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = "white";
+        ctx.fillText(this.type[0].toUpperCase(), this.x - camX - 5, this.y - camY + 5);
+    }
+}
+
+/** --- 游戏主循环 --- **/
+function gameLoop() {
+    if(isGameOver) return;
+    
+    // 1. 玩家移动
+    if(moveJoystick.active) {
+        let dx = moveJoystick.currX - moveJoystick.x;
+        let dy = moveJoystick.currY - moveJoystick.y;
+        let dist = Math.hypot(dx, dy);
+        if(dist > 5) {
+            player.x += (dx/dist) * player.speed;
+            player.y += (dy/dist) * player.speed;
+        }
+    }
+
+    // 2. 玩家射击
+    const fireRate = parseInt(document.getElementById('fireRateRange').value);
+    if(shootJoystick.active && player.shootTimer <= 0) {
+        let dx = shootJoystick.currX - shootJoystick.x;
+        let dy = shootJoystick.currY - shootJoystick.y;
+        let angle = Math.atan2(dy, dx);
+        
+        if(player.bulletType === 'spread') {
+            for(let a of [-0.2, 0, 0.2]) bullets.push(new Bullet(player.x, player.y, angle + a, 'normal'));
+        } else {
+            bullets.push(new Bullet(player.x, player.y, angle, player.bulletType));
+        }
+        player.shootTimer = fireRate;
+    }
+    player.shootTimer--;
+
+    // 3. 摄像机计算 (跟随玩家)
+    let camX = player.x - canvas.width/2;
+    let camY = player.y - canvas.height/2;
+
+    // 渲染背景
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    drawGrid(camX, camY);
+
+    // 更新敌人
+    if(Math.random() < 0.02) spawnEnemy();
+    enemies.forEach((en, i) => {
+        let angle = Math.atan2(player.y - en.y, player.x - en.x);
+        en.x += Math.cos(angle) * 2;
+        en.y += Math.sin(angle) * 2;
+        
+        // 绘制敌人
+        ctx.fillStyle = 'red';
+        ctx.beginPath(); ctx.arc(en.x - camX, en.y - camY, 15, 0, Math.PI*2); ctx.fill();
+        
+        // 伤害检测
+        if(Math.hypot(player.x - en.x, player.y - en.y) < 30) {
+            player.health -= 0.5;
+            if(player.health <= 0) die();
+        }
+    });
+
+    // 子弹更新与碰撞
+    bullets.forEach((b, bi) => {
+        b.update(); b.draw(camX, camY);
+        enemies.forEach((en, ei) => {
+            if(Math.hypot(b.x - en.x, b.y - en.y) < 20) {
+                enemies.splice(ei, 1);
+                if(b.type !== 'mega') bullets.splice(bi, 1);
+                score += 10;
+                if(Math.random() < 0.2) powerups.push(new PowerUp(en.x, en.y));
+            }
+        });
+        if(b.life <= 0) bullets.splice(bi, 1);
+    });
+
+    // 道具更新
+    powerups.forEach((p, pi) => {
+        p.draw(camX, camY);
+        if(Math.hypot(player.x - p.x, player.y - p.y) < 30) {
+            if(p.type === 'heal') { player.health = Math.min(100, player.health+30); playSfx(600,'sine',0.3); }
+            else { player.bulletType = p.type; document.getElementById('ammo-type').innerText = p.type; playSfx(800); }
+            powerups.splice(pi, 1);
+        }
+    });
+
+    // 掩体绘制
+    ctx.fillStyle = '#636e72';
+    obstacles.forEach(o => {
+        ctx.beginPath(); ctx.arc(o.x - camX, o.y - camY, o.r, 0, Math.PI*2); ctx.fill();
+    });
+
+    // 玩家绘制
+    ctx.fillStyle = player.color;
+    ctx.beginPath(); ctx.arc(player.x - camX, player.y - camY, player.r, 0, Math.PI*2); ctx.fill();
+    
+    // 更新 UI
+    document.getElementById('health-fill').style.width = player.health + '%';
+    document.getElementById('score').innerText = score;
+
+    requestAnimationFrame(gameLoop);
+}
+
+function spawnEnemy() {
+    let a = Math.random() * Math.PI * 2;
+    enemies.push({ x: player.x + Math.cos(a)*600, y: player.y + Math.sin(a)*600 });
+}
+
+function drawGrid(camX, camY) {
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    for(let i=0; i<WORLD_SIZE; i+=100) {
+        ctx.beginPath(); ctx.moveTo(i-camX, 0-camY); ctx.lineTo(i-camX, WORLD_SIZE-camY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0-camX, i-camY); ctx.lineTo(WORLD_SIZE-camX, i-camY); ctx.stroke();
+    }
+}
+
+function die() { isGameOver = true; document.getElementById('gameover').style.display='block'; document.getElementById('final-score').innerText = score; }
+
+// iPad 触摸事件
+canvas.addEventListener('touchstart', e => {
+    [...e.touches].forEach(t => {
+        if(t.clientX < canvas.width/2) { moveJoystick.active=true; moveJoystick.x=t.clientX; moveJoystick.y=t.clientY; moveJoystick.currX=t.clientX; moveJoystick.currY=t.clientY; }
+        else { shootJoystick.active=true; shootJoystick.x=t.clientX; shootJoystick.y=t.clientY; shootJoystick.currX=t.clientX; shootJoystick.currY=t.clientY; }
+    });
+});
+canvas.addEventListener('touchmove', e => {
+    [...e.touches].forEach(t => {
+        if(t.clientX < canvas.width/2) { moveJoystick.currX=t.clientX; moveJoystick.currY=t.clientY; }
+        else { shootJoystick.currX=t.clientX; shootJoystick.currY=t.clientY; }
+    });
+});
+canvas.addEventListener('touchend', e => {
+    if(e.touches.length === 0) { moveJoystick.active=false; shootJoystick.active=false; }
+});
+
+gameLoop();
+</script>
+</body>
+</html>
