@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>武装突袭 - 托马斯定制版</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Courier New', Courier, monospace; touch-action: none; }
+        canvas { display: block; background: #2b2b2b; }
+        #ui { position: absolute; top: 10px; left: 10px; color: #0f0; pointer-events: none; }
+        #weapon-selector { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; pointer-events: auto; }
+        .w-btn { padding: 10px; background: rgba(0,255,0,0.2); border: 1px solid #0f0; color: #0f0; border-radius: 5px; font-size: 12px; }
+        .active { background: #0f0; color: #000; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    HP: <span id="hp">100</span> | SCORE: <span id="score">0</span>
+</div>
+
+<div id="weapon-selector">
+    <div class="w-btn active" id="btn-0">手枪</div>
+    <div class="w-btn" id="btn-1">冲锋枪</div>
+    <div class="w-btn" id="btn-2">霰弹枪</div>
+    <div class="w-btn" id="btn-3">狙击枪</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** --- 音效引擎 --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playGunSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+
+    if (type === 'pistol') {
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'shotgun') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    } else if (type === 'sniper') {
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    }
+}
+
+/** --- 游戏参数 --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+const WEAPONS = [
+    { name: '手枪', fireRate: 400, spread: 0.05, count: 1, type: 'pistol' },
+    { name: '冲锋枪', fireRate: 100, spread: 0.2, count: 1, type: 'pistol' },
+    { name: '霰弹枪', fireRate: 800, spread: 0.5, count: 5, type: 'shotgun' },
+    { name: '狙击枪', fireRate: 1200, spread: 0, count: 1, type: 'sniper' }
+];
+
+let currentWeaponIdx = 0;
+let player = { x: canvas.width/2, y: canvas.height/2, hp: 100, score: 0 };
+let enemies = [], bullets = [], obstacles = [];
+let lastFire = 0;
+
+// 初始化障碍物
+for(let i=0; i<8; i++) {
+    obstacles.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: 30+Math.random()*20 });
+}
+
+// 摇杆逻辑
+let movePad = { active: false, x: 0, y: 0, currX: 0, currY: 0 };
+let shootPad = { active: false, x: 0, y: 0, currX: 0, currY: 0 };
+
+/** --- 渲染循环 --- **/
+function gameLoop(t) {
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    // 玩家移动
+    if(movePad.active) {
+        const dx = movePad.currX - movePad.x, dy = movePad.currY - movePad.y;
+        const dist = Math.hypot(dx, dy);
+        if(dist > 5) {
+            player.x += (dx/dist)*3; player.y += (dy/dist)*3;
+        }
+    }
+
+    // 自动开火逻辑
+    const weapon = WEAPONS[currentWeaponIdx];
+    if(shootPad.active && t - lastFire > weapon.fireRate) {
+        const angle = Math.atan2(shootPad.currY - shootPad.y, shootPad.currX - shootPad.x);
+        for(let i=0; i<weapon.count; i++) {
+            const spread = (Math.random()-0.5) * weapon.spread;
+            bullets.push({ x: player.x, y: player.y, angle: angle + spread, speed: 10 });
+        }
+        playGunSound(weapon.type);
+        lastFire = t;
+    }
+
+    // 更新绘制子弹
+    bullets.forEach((b, i) => {
+        b.x += Math.cos(b.angle)*b.speed; b.y += Math.sin(b.angle)*b.speed;
+        ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill();
+        if(b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(i, 1);
+    });
+
+    // 敌人 logic
+    if(Math.random() < 0.02) {
+        enemies.push({ x: Math.random()*canvas.width, y: -20, hp: 2 });
+    }
+    enemies.forEach((en, i) => {
+        const angle = Math.atan2(player.y - en.y, player.x - en.x);
+        en.x += Math.cos(angle)*1.5; en.y += Math.sin(angle)*1.5;
+        ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.arc(en.x, en.y, 15, 0, Math.PI*2); ctx.fill();
+        
+        // 碰撞
+        bullets.forEach((b, bi) => {
+            if(Math.hypot(b.x-en.x, b.y-en.y) < 18) {
+                en.hp--; bullets.splice(bi, 1);
+                if(en.hp <= 0) { enemies.splice(i,1); player.score += 10; }
+            }
+        });
+    });
+
+    // 障碍物
+    ctx.fillStyle = '#444';
+    obstacles.forEach(ob => {
+        ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.fill();
+    });
+
+    // 玩家
+    ctx.fillStyle = '#0f0'; ctx.beginPath(); ctx.arc(player.x, player.y, 15, 0, Math.PI*2); ctx.fill();
+
+    document.getElementById('hp').innerText = Math.ceil(player.hp);
+    document.getElementById('score').innerText = player.score;
+    requestAnimationFrame(gameLoop);
+}
+
+/** --- 交互逻辑 --- **/
+canvas.addEventListener('touchstart', e => {
+    [...e.touches].forEach(t => {
+        if(t.clientX < canvas.width/2) { movePad.active=true; movePad.x=t.clientX; movePad.y=t.clientY; movePad.currX=t.clientX; movePad.currY=t.clientY; }
+        else { shootPad.active=true; shootPad.x=t.clientX; shootPad.y=t.clientY; shootPad.currX=t.clientX; shootPad.currY=t.clientY; }
+    });
+});
+canvas.addEventListener('touchmove', e => {
+    [...e.touches].forEach(t => {
+        if(t.clientX < canvas.width/2) { movePad.currX=t.clientX; movePad.currY=t.clientY; }
+        else { shootPad.currX=t.clientX; shootPad.currY=t.clientY; }
+    });
+});
+canvas.addEventListener('touchend', e => {
+    if(e.touches.length === 0) { movePad.active=false; shootPad.active=false; }
+});
+
+// 武器切换
+document.querySelectorAll('.w-btn').forEach((btn, idx) => {
+    btn.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        currentWeaponIdx = idx;
+        document.querySelectorAll('.w-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    });
+});
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
