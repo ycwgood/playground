@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>坦克大战：保卫基地</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { background: #222; border: 4px solid #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        #ui { position: absolute; top: 10px; color: #fff; display: flex; gap: 20px; font-size: 18px; text-shadow: 2px 2px #000; pointer-events: none; }
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 20px; box-sizing: border-box; }
+        
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 5px; }
+        .btn { background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; }
+        .btn:active { background: rgba(255,255,255,0.5); }
+        .fire-btn { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,0,0,0.4); border: 3px solid #ff4757; font-size: 24px; }
+        
+        #level-select { position: absolute; right: 10px; top: 10px; pointer-events: auto; }
+        select { background: #333; color: #fff; padding: 5px; border: 1px solid #fff; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui">
+        <div>血量: <span id="hp">100</span></div>
+        <div>分数: <span id="score">0</span></div>
+        <div>弹药: <span id="bullet-name">常规</span></div>
+    </div>
+
+    <div id="level-select">
+        地图: <select id="mapSelect">
+            <option value="0">经典关卡 1</option>
+            <option value="1">迷宫围城 2</option>
+            <option value="2">十字防线 3</option>
+        </select>
+    </div>
+
+    <canvas id="tankCanvas"></canvas>
+
+    <div id="controls">
+        <div class="d-pad">
+            <div></div><div class="btn" id="up">↑</div><div></div>
+            <div class="btn" id="left">左</div><div></div><div class="btn" id="right">右</div>
+            <div></div><div class="btn" id="down">↓</div><div></div>
+        </div>
+        <div class="btn fire-btn" id="fire">开火</div>
+    </div>
+</div>
+
+<script>
+/** --- 音效模块 --- **/
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSfx(type) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    if(type==='shoot'){
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime+0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime+0.1);
+    } else if(type==='boom'){
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime+0.2);
+    } else if(type==='powerup'){
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime+0.2);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime+0.2);
+    }
+}
+
+/** --- 游戏核心 --- **/
+const canvas = document.getElementById('tankCanvas');
+const ctx = canvas.getContext('2d');
+const TILE = 40; 
+canvas.width = 13 * TILE; // 标准红白机地图尺寸
+canvas.height = 13 * TILE;
+
+const maps = [
+    // 0: 空地, 1: 砖墙, 2: 钢墙, 9: 老家
+    [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,1,0,1,0,1,0,1,0,1,0,1,0],
+        [0,1,0,1,0,1,0,1,0,1,0,1,0],
+        [0,0,0,0,2,2,2,2,2,0,0,0,0],
+        [1,0,1,0,0,0,0,0,0,0,1,0,1],
+        [1,0,1,0,2,2,0,2,2,0,1,0,1],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [1,0,1,0,2,2,0,2,2,0,1,0,1],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,1,1,0,0,0,0,0,0,0,1,1,0],
+        [0,1,1,0,1,1,1,1,1,0,1,1,0],
+        [0,0,0,0,1,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,9,9,9,1,0,0,0,0]
+    ],
+    [
+        [2,2,0,0,0,0,0,0,0,0,0,2,2],[2,0,0,1,1,1,1,1,1,1,0,0,2],[0,0,1,0,0,0,0,0,0,0,1,0,0],[0,1,0,0,2,2,2,2,2,0,0,1,0],[0,1,0,2,0,0,0,0,0,2,0,1,0],[0,1,0,2,0,1,1,1,0,2,0,1,0],[0,1,0,2,0,1,9,1,0,2,0,1,0],[0,1,0,2,0,1,1,1,0,2,0,1,0],[0,1,0,2,0,0,0,0,0,2,0,1,0],[0,1,0,0,2,2,2,2,2,0,0,1,0],[0,0,1,0,0,0,0,0,0,0,1,0,0],[2,0,0,1,1,1,1,1,1,1,0,0,2],[2,2,0,0,0,0,0,0,0,0,0,2,2]
+    ],
+    [
+        [0,0,0,0,1,1,2,1,1,0,0,0,0],[0,0,0,0,1,1,2,1,1,0,0,0,0],[0,0,0,0,0,0,2,0,0,0,0,0,0],[2,2,2,0,0,0,2,0,0,0,2,2,2],[1,1,0,0,1,1,2,1,1,0,0,1,1],[1,1,0,0,1,1,2,1,1,0,0,1,1],[2,2,2,2,2,2,9,2,2,2,2,2,2],[1,1,0,0,1,1,2,1,1,0,0,1,1],[1,1,0,0,1,1,2,1,1,0,0,1,1],[2,2,2,0,0,0,2,0,0,0,2,2,2],[0,0,0,0,0,0,2,0,0,0,0,0,0],[0,0,0,0,1,1,2,1,1,0,0,0,0],[0,0,0,0,1,1,2,1,1,0,0,0,0]
+    ]
+];
+
+let currentLevel = 0;
+let player = { x: 4, y: 11, d: 'up', hp: 100, bulletType: 'normal' };
+let bullets = [], enemies = [], powerups = [];
+let keys = {};
+
+// 道具类型
+const BULLET_TYPES = {
+    'normal': { speed: 5, power: 1, color: '#fff' },
+    'heavy': { speed: 7, power: 2, color: '#fb1' }, // 穿透
+    'fast': { speed: 10, power: 1, color: '#0ff' }
+};
+
+// 操控绑定
+function bindBtn(id, dir) {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[dir] = true; });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[dir] = false; });
+}
+['up','down','left','right'].forEach(d => bindBtn(d, d));
+document.getElementById('fire').addEventListener('touchstart', (e) => { e.preventDefault(); shoot(); });
+document.getElementById('mapSelect').onchange = (e) => { currentLevel = e.target.value; resetGame(); };
+
+function resetGame() {
+    player = { x: 4, y: 11, d: 'up', hp: 100, bulletType: 'normal' };
+    bullets = []; enemies = []; powerups = [];
+}
+
+function shoot() {
+    const b = BULLET_TYPES[player.bulletType];
+    bullets.push({ 
+        x: player.x * TILE + TILE/2, 
+        y: player.y * TILE + TILE/2, 
+        d: player.d, 
+        s: b.speed, 
+        p: b.power,
+        c: b.color,
+        owner: 'player'
+    });
+    playSfx('shoot');
+}
+
+function update() {
+    // 移动逻辑（带格子对齐转向）
+    let nextX = player.x, nextY = player.y;
+    if(keys.up) { player.d = 'up'; nextY -= 0.1; }
+    else if(keys.down) { player.d = 'down'; nextY += 0.1; }
+    else if(keys.left) { player.d = 'left'; nextX -= 0.1; }
+    else if(keys.right) { player.d = 'right'; nextX += 0.1; }
+
+    // 碰撞地图检测
+    const map = maps[currentLevel];
+    const gridX = Math.round(nextX), gridY = Math.round(nextY);
+    if(gridX >=0 && gridX < 13 && gridY >=0 && gridY < 13) {
+        if(map[gridY][gridX] === 0 || map[gridY][gridX] === 9) {
+            player.x = nextX; player.y = nextY;
+        }
+    }
+
+    // 子弹逻辑
+    bullets.forEach((b, i) => {
+        if(b.d === 'up') b.y -= b.s;
+        if(b.d === 'down') b.y += b.s;
+        if(b.d === 'left') b.x -= b.s;
+        if(b.d === 'right') b.x += b.s;
+
+        const gx = Math.floor(b.x / TILE), gy = Math.floor(b.y / TILE);
+        if(gx < 0 || gx >= 13 || gy < 0 || gy >= 13) { bullets.splice(i, 1); return; }
+
+        const cell = map[gy][gx];
+        if(cell === 1) { // 砖块：可破坏
+            map[gy][gx] = 0; bullets.splice(i, 1); playSfx('boom');
+        } else if(cell === 2) { // 钢块：不可破坏
+            bullets.splice(i, 1);
+        } else if(cell === 9) { // 老家：GG
+            alert("老家被毁！游戏结束"); resetGame();
+        }
+    });
+
+    // 随机生成敌人
+    if(Math.random() < 0.01 && enemies.length < 3) {
+        enemies.push({ x: Math.floor(Math.random()*13), y: 0, d: 'down', hp: 2 });
+    }
+    
+    // 敌人移动与AI简易逻辑
+    enemies.forEach((en, i) => {
+        if(Math.random() < 0.02) en.d = ['up','down','left','right'][Math.floor(Math.random()*4)];
+        let ex = en.x, ey = en.y;
+        if(en.d==='up') ey-=0.05; if(en.d==='down') ey+=0.05;
+        if(en.d==='left') ex-=0.05; if(en.d==='right') ex+=0.05;
+        if(ex>=0 && ex<13 && ey>=0 && ey<13 && map[Math.round(ey)][Math.round(ex)]===0) {
+            en.x = ex; en.y = ey;
+        }
+        if(Math.random() < 0.01) bullets.push({ x: en.x*TILE+20, y: en.y*TILE+20, d: en.d, s: 4, p: 1, c: '#f00', owner: 'enemy'});
+    });
+
+    // 生成道具
+    if(Math.random() < 0.005) powerups.push({ x: Math.random()*12, y: Math.random()*12, type: Math.random()>0.5?'heal':'ammo' });
+    powerups.forEach((p, i) => {
+        if(Math.hypot(player.x - p.x, player.y - p.y) < 1) {
+            if(p.type==='heal') { player.hp = Math.min(100, player.hp+20); }
+            else { player.bulletType = 'heavy'; setTimeout(()=>player.bulletType='normal', 10000); }
+            powerups.splice(i, 1); playSfx('powerup');
+        }
+    });
+
+    document.getElementById('hp').innerText = Math.ceil(player.hp);
+}
+
+function draw() {
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    const map = maps[currentLevel];
+    
+    // 画地图
+    for(let y=0; y<13; y++) {
+        for(let x=0; x<13; x++) {
+            if(map[y][x] === 1) { ctx.fillStyle = '#a52a2a'; ctx.fillRect(x*TILE+2, y*TILE+2, TILE-4, TILE-4); }
+            if(map[y][x] === 2) { ctx.fillStyle = '#aaa'; ctx.fillRect(x*TILE, y*TILE, TILE, TILE); }
+            if(map[y][x] === 9) { ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(x*TILE+20, y*TILE+5); ctx.lineTo(x*TILE+5, y*TILE+35); ctx.lineTo(x*TILE+35, y*TILE+35); ctx.fill(); }
+        }
+    }
+
+    // 画玩家坦克
+    ctx.fillStyle = '#0f0';
+    ctx.save();
+    ctx.translate(player.x*TILE+TILE/2, player.y*TILE+TILE/2);
+    if(player.d==='down') ctx.rotate(Math.PI);
+    if(player.d==='left') ctx.rotate(-Math.PI/2);
+    if(player.d==='right') ctx.rotate(Math.PI/2);
+    ctx.fillRect(-15, -15, 30, 30);
+    ctx.fillStyle = '#fff'; ctx.fillRect(-2, -20, 4, 15); // 炮管
+    ctx.restore();
+
+    // 画子弹
+    bullets.forEach(b => {
+        ctx.fillStyle = b.c;
+        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+    });
+
+    // 画敌人
+    ctx.fillStyle = '#f44';
+    enemies.forEach(en => { ctx.fillRect(en.x*TILE+5, en.y*TILE+5, 30, 30); });
+
+    // 画道具
+    powerups.forEach(p => {
+        ctx.fillStyle = p.type==='heal'?'#2ecc71':'#f1c40f';
+        ctx.fillRect(p.x*TILE+10, p.y*TILE+10, 20, 20);
+    });
+}
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>
