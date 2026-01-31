@@ -10,12 +10,14 @@
         #ui { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px 2px #000; pointer-events: none; font-size: 1.2em; }
         #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-size: 2em; display: none; }
         button { padding: 15px 30px; font-size: 20px; background: #ff4757; color: white; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; }
+        /* 血槽样式 */
+        #healthBar { display:inline-block; vertical-align: middle; width:160px; height:18px; background: rgba(0,0,0,0.4); border-radius:9px; margin-left:8px; overflow:hidden; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+        #healthFill { height:100%; width:100%; background: linear-gradient(90deg,#32cd32,#ffcc00); transition: width 120ms linear; }
     </style>
 </head>
 <body>
-
 <div id="ui">
-    <div>生命: <span id="playerHealth">100</span></div>
+    <div>生命: <div id="healthBar"><div id="healthFill"></div></div></div>
     <div>分数: <span id="score">0</span></div>
     <div>波数: <span id="wave">1</span></div>
 </div>
@@ -43,9 +45,11 @@ let player = {
     color: '#007bff',
     direction: 0, // 射击方向，弧度
     shootCooldown: 0,
-    maxShootCooldown: 20, // 射击间隔
-    bulletSpeed: 7,
-    bulletDamage: 10,
+    maxShootCooldown: 10, // 射击间隔（减小以提高射速）
+    bulletSpeed: 9, // 提高子弹速度
+    bulletDamage: 15, // 增强伤害
+    damageCooldown: 0, // 受击无敌帧计时（帧数）
+    lastShotTime: 0
 };
 
 let bullets = [];
@@ -54,7 +58,7 @@ let obstacles = [];
 let score = 0;
 let wave = 1;
 let lastEnemySpawn = 0;
-let enemySpawnInterval = 1500;
+let enemySpawnInterval = 2200; // 初始生成间隔，增大以减缓敌人数量
 let isGameOver = false;
 
 // 虚拟摇杆状态
@@ -70,6 +74,51 @@ const config = {
     waveInterval: 5 * 1000, // 波次间隔
     lastWaveChange: 0
 };
+// 基础配置扩展
+config.maxEnemiesBase = 6; // 每波基础最大敌人数（随波次可扩展）
+
+// 角度插值（取最短旋转方向）
+function lerpAngle(a, b, t) {
+    let diff = b - a;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    return a + diff * t;
+}
+
+// 简单 WebAudio 音效，支持 'shoot','hit','enemyDie','death'
+const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+function playSound(type) {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0, now);
+    if (type === 'shoot') {
+        o.type = 'square';
+        o.frequency.setValueAtTime(900, now);
+        g.gain.linearRampToValueAtTime(0.12, now + 0.001);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    } else if (type === 'hit') {
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(220, now);
+        g.gain.linearRampToValueAtTime(0.14, now + 0.001);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    } else if (type === 'enemyDie') {
+        o.type = 'sine';
+        o.frequency.setValueAtTime(520, now);
+        g.gain.linearRampToValueAtTime(0.16, now + 0.001);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    } else if (type === 'death') {
+        o.type = 'sine';
+        o.frequency.setValueAtTime(120, now);
+        g.gain.linearRampToValueAtTime(0.2, now + 0.001);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    }
+    o.start(now);
+    o.stop(now + 1);
+}
 
 // --- 工具函数 ---
 function distance(x1, y1, x2, y2) {
@@ -222,8 +271,8 @@ function animate(timestamp) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 绘制 UI (生命、分数、波数)
-    document.getElementById('playerHealth').innerText = player.health;
+    // 绘制 UI (分数、波数)
+    // 生命使用血槽显示，稍后在帧末更新
     document.getElementById('score').innerText = score;
     document.getElementById('wave').innerText = wave;
 
@@ -256,18 +305,26 @@ function animate(timestamp) {
     }
 
     // --- 玩家射击 ---
-    if (shootJoystick.active && player.shootCooldown <= 0) {
+    if (shootJoystick.active) {
         const dx = shootJoystick.currentX - shootJoystick.startX;
         const dy = shootJoystick.currentY - shootJoystick.startY;
         const mag = Math.hypot(dx, dy);
 
         if (mag > 0) {
-            player.direction = Math.atan2(dy, dx);
+            const targetAngle = Math.atan2(dy, dx);
+            // 平滑转向，提升操控灵敏度
+            player.direction = lerpAngle(player.direction, targetAngle, 0.25);
+        }
+
+        if (mag > 0 && player.shootCooldown <= 0) {
             bullets.push(new Bullet(player.x, player.y, player.direction, player.bulletSpeed, player.bulletDamage));
             player.shootCooldown = player.maxShootCooldown;
+            player.lastShotTime = timestamp;
+            playSound('shoot');
         }
     }
     if (player.shootCooldown > 0) player.shootCooldown--;
+    if (player.damageCooldown > 0) player.damageCooldown--; // 无敌帧计时减小
 
     // --- 更新子弹 ---
     bullets.forEach((bullet, index) => {
@@ -281,6 +338,9 @@ function animate(timestamp) {
                 if (enemy.health <= 0) {
                     enemies.splice(enemyIndex, 1);
                     score += 10;
+                    playSound('enemyDie');
+                } else {
+                    playSound('hit');
                 }
                 bullets.splice(index, 1); // 销毁子弹
             }
@@ -293,7 +353,9 @@ function animate(timestamp) {
     });
 
     // --- 更新敌人 ---
-    if (timestamp - lastEnemySpawn > enemySpawnInterval / Math.sqrt(wave)) { // 随波数加快生成
+    // 敌人生成：限制最大敌人数以避免压垮玩家
+    const maxEnemies = config.maxEnemiesBase + Math.floor(wave * 1);
+    if (enemies.length < maxEnemies && timestamp - lastEnemySpawn > enemySpawnInterval / Math.sqrt(wave)) {
         enemies.push(new Enemy());
         lastEnemySpawn = timestamp;
     }
@@ -302,11 +364,23 @@ function animate(timestamp) {
         enemy.update();
         enemy.draw();
 
-        // 敌人与玩家碰撞
+        // 敌人与玩家碰撞：改为瞬时伤害并添加无敌帧，避免被连续帧秒杀
         if (distance(enemy.x, enemy.y, player.x, player.y) < enemy.r + player.r) {
-            player.health -= 1; // 持续掉血
-            if (player.health <= 0) {
-                endGame();
+            if (player.damageCooldown <= 0) {
+                player.health -= 18; // 一次性伤害值
+                player.damageCooldown = 40; // 约 40 帧无敌
+                playSound('hit');
+                // 简单反弹，减少粘连
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const overlap = (enemy.r + player.r) - dist;
+                enemy.x -= (dx / dist) * overlap * 1.5;
+                enemy.y -= (dy / dist) * overlap * 1.5;
+                if (player.health <= 0) {
+                    playSound('death');
+                    endGame();
+                }
             }
         }
     });
@@ -323,22 +397,68 @@ function animate(timestamp) {
     obstacles.forEach(obstacle => obstacle.draw());
 
     // --- 绘制玩家 ---
-    ctx.fillStyle = player.color;
+    // 更仿真的玩家绘制：椭圆车体 + 旋转炮管 + 中心铆钉
+    ctx.save();
+    // 阴影
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.ellipse(player.x + 6, player.y + 8, player.r * 1.4, player.r * 0.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 绘制玩家朝向指示 (射击方向)
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
+    // 车体
+    ctx.translate(player.x, player.y);
+    ctx.rotate(0);
+    const grad = ctx.createLinearGradient(-player.r, -player.r, player.r, player.r);
+    grad.addColorStop(0, '#2e6fb3');
+    grad.addColorStop(1, '#1b4f8a');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(player.x, player.y);
-    ctx.lineTo(player.x + Math.cos(player.direction) * (player.r + 10), player.y + Math.sin(player.direction) * (player.r + 10));
-    ctx.stroke();
+    ctx.ellipse(0, 0, player.r * 1.4, player.r, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 炮管
+    ctx.save();
+    ctx.rotate(player.direction);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, -4, player.r + 14, 8);
+    // 炮口小管
+    ctx.fillStyle = '#444';
+    ctx.fillRect(player.r + 14, -2.5, 6, 5);
+
+    // 炮口闪光
+    if (player.lastShotTime && (timestamp - player.lastShotTime) < 150) {
+        const t = (timestamp - player.lastShotTime) / 150;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255,220,100,${1 - t})`;
+        ctx.moveTo(player.r + 20, 0);
+        ctx.lineTo(player.r + 34, -8 * (1 - t));
+        ctx.lineTo(player.r + 34, 8 * (1 - t));
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 炮塔中间圆
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(0, 0, player.r * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
 
     // 绘制虚拟摇杆
     drawJoystick(moveJoystick, canvas.width / 4, canvas.height - canvas.height / 4);
     drawJoystick(shootJoystick, canvas.width - canvas.width / 4, canvas.height - canvas.height / 4);
+
+    // 更新血槽 UI
+    const fill = document.getElementById('healthFill');
+    if (fill) {
+        const pct = Math.max(0, Math.min(1, player.health / player.maxHealth));
+        fill.style.width = (pct * 100) + '%';
+        // 低血量提示色
+        if (pct < 0.3) fill.style.background = 'linear-gradient(90deg,#ff4d4d,#ffcc00)';
+        else fill.style.background = 'linear-gradient(90deg,#32cd32,#ffcc00)';
+    }
 
     requestAnimationFrame(animate);
 }
