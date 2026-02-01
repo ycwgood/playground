@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>飞行躲避射击 - 豪华版</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; background: #2d3436; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px 2px #000; pointer-events: none; font-size: 1.1em; font-weight: bold; z-index: 10; }
+        #healthBar { display:inline-block; vertical-align: middle; width:150px; height:16px; background: rgba(0,0,0,0.4); border-radius:8px; margin-left:8px; overflow:hidden; box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+        #healthFill { height:100%; width:100%; background: linear-gradient(90deg,#32cd32,#ffcc00); transition: width 80ms linear; }
+        #gameover { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; font-size: 2.5em; display: none; background: rgba(0,0,0,0.8); padding: 40px; border-radius: 12px; z-index: 100; border: 2px solid #ff4757; }
+        button { padding: 12px 25px; font-size: 18px; background: #ff4757; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer; font-weight: bold; }
+        .weapon-info { position: absolute; bottom: 20px; left: 20px; color: white; text-shadow: 1px 1px 2px #000; font-size: 1em; pointer-events: none; z-index: 10; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div>生命: <div id="healthBar"><div id="healthFill"></div></div></div>
+    <div>分数: <span id="score">0</span></div>
+    <div>高度: <span id="height">0</span>m</div>
+</div>
+
+<div class="weapon-info">
+    武器: <span id="weaponType">普通弹</span> | 等级: <span id="weaponLevel">Lv1</span> | 僚机: <span id="wingmanCount">0</span>
+</div>
+
+<div id="gameover">
+    <h1>战机陨落!</h1>
+    <div style="font-size:0.6em;margin-top:10px;">最终战果: <span id="finalScore">0</span></div>
+    <button onclick="resetGame()">再次出击</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// ========== 游戏配置与状态 ==========
+let gameState = {
+    isGameOver: false,
+    score: 0,
+    scrollY: 0,
+    frameCount: 0
+};
+
+const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+function playSound(type, freq = 400, duration = 0.15) {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = 'sine'; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    o.start(); o.stop(audioCtx.currentTime + duration);
+}
+
+// ========== 核心对象定义 ==========
+let player = {
+    x: canvas.width / 2, y: canvas.height - 100,
+    r: 12, width: 26, height: 30,
+    health: 100, maxHealth: 100,
+    vx: 0, vy: 0, maxSpeed: 5,
+    shootCooldown: 0, maxShootCooldown: 8,
+    weaponType: 'normal', weaponLevel: 1,
+    wingmans: []
+};
+
+// 敌机类型定义 (增强版)
+const ENEMY_TYPES = {
+    scout: { health: 30, speed: 2.5, score: 10, color: '#FF6B6B', size: 18 },
+    fighter: { health: 60, speed: 3, score: 20, color: '#FF8C42', size: 22 },
+    bomber: { health: 180, speed: 1.2, score: 50, color: '#DC143C', size: 35 },
+    awacs: { health: 250, speed: 0.8, score: 100, color: '#f0932b', size: 40 }, // 预警机
+    heli: { health: 40, speed: 2, score: 30, color: '#95afc0', size: 24, isHeli: true }
+};
+
+let playerBullets = [];
+let enemies = [];
+let enemyBullets = [];
+let items = [];
+let particles = [];
+let groundUnits = [];
+let bgElements = [];
+
+// ========== 背景地形系统 ==========
+const TERRAIN = {
+    mountain: '#576574', river: '#2e86de', road: '#54a0ff', 
+    grass: '#10ac84', castle: '#222f3e', bridge: '#8395a7'
+};
+
+function spawnBackground() {
+    if (gameState.frameCount % 100 === 0) {
+        const types = Object.keys(TERRAIN);
+        const type = types[Math.floor(Math.random() * types.length)];
+        bgElements.push({
+            x: Math.random() * canvas.width,
+            y: -300,
+            type: type,
+            w: 100 + Math.random() * 200,
+            h: 150 + Math.random() * 200,
+            speed: 1.5
+        });
+    }
+}
+
+// ========== 僚机类 ==========
+class Wingman {
+    constructor(side) {
+        this.side = side; // -1 为左, 1 为右
+        this.x = player.x;
+        this.y = player.y;
+    }
+    update() {
+        const targetX = player.x + (this.side * 35);
+        const targetY = player.y + 20;
+        this.x += (targetX - this.x) * 0.1;
+        this.y += (targetY - this.y) * 0.1;
+        if (gameState.frameCount % 15 === 0 && !gameState.isGameOver) {
+            playerBullets.push(new PlayerBullet(this.x, this.y, 0, -10, 'normal'));
+        }
+    }
+    draw() {
+        ctx.fillStyle = '#f1c40f';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y - 8);
+        ctx.lineTo(this.x + 6, this.y + 6);
+        ctx.lineTo(this.x - 6, this.y + 6);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+// ========== 敌人与坦克类 ==========
+class Enemy {
+    constructor(x, y, type) {
+        this.x = x; this.y = y;
+        this.type = type;
+        const cfg = ENEMY_TYPES[type];
+        this.health = cfg.health;
+        this.maxHealth = cfg.health;
+        this.speed = cfg.speed;
+        this.size = cfg.size;
+        this.color = cfg.color;
+    }
+    update() {
+        this.y += this.speed;
+        if (gameState.frameCount % 60 === 0) this.shoot();
+    }
+    shoot() {
+        enemyBullets.push(new EnemyBullet(this.x, this.y + 10, 0, 4));
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = this.color;
+        // 绘制机身
+        ctx.beginPath();
+        ctx.moveTo(0, this.size/2);
+        ctx.lineTo(this.size/2, -this.size/2);
+        ctx.lineTo(-this.size/2, -this.size/2);
+        ctx.closePath();
+        ctx.fill();
+        // 如果是直升机，画螺旋桨
+        if (ENEMY_TYPES[this.type].isHeli) {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.rotate(Date.now() / 50);
+            ctx.beginPath(); ctx.moveTo(-this.size, 0); ctx.lineTo(this.size, 0); ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+class Tank {
+    constructor(x) {
+        this.x = x; this.y = -50;
+        this.health = 50;
+    }
+    update() { 
+        this.y += 1.5; // 地面移动速度
+        if (gameState.frameCount % 100 === 0) {
+            const angle = Math.atan2(player.y - this.y, player.x - this.x);
+            enemyBullets.push(new EnemyBullet(this.x, this.y, Math.cos(angle)*3, Math.sin(angle)*3));
+        }
+    }
+    draw() {
+        ctx.fillStyle = '#4b6584';
+        ctx.fillRect(this.x - 15, this.y - 10, 30, 20);
+        ctx.fillStyle = '#2d3436';
+        ctx.fillRect(this.x - 5, this.y - 15, 10, 10);
+    }
+}
+
+// ========== 子弹与道具类 ==========
+class PlayerBullet {
+    constructor(x, y, vx, vy, type) {
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.type = type;
+        this.damage = type === 'bomb' ? 40 : 15;
+    }
+    update() { this.x += this.vx; this.y += this.vy; }
+    draw() {
+        ctx.fillStyle = this.type === 'bomb' ? '#ff4757' : '#eccc68';
+        ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
+    }
+}
+
+class EnemyBullet {
+    constructor(x, y, vx, vy) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; }
+    update() { this.x += this.vx; this.y += this.vy; }
+    draw() {
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill();
+    }
+}
+
+class Item {
+    constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.r = 10; }
+    update() { this.y += 2; }
+    draw() {
+        const colors = { health: '#2ecc71', wingman: '#f1c40f', weapon: '#3498db' };
+        ctx.fillStyle = colors[this.type];
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.type[0].toUpperCase(), this.x, this.y + 4);
+    }
+}
+
+// ========== 游戏控制逻辑 ==========
+let moveJoystick = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, id: -1 };
+
+function handleInput() {
+    if (moveJoystick.active) {
+        const dx = moveJoystick.currentX - moveJoystick.startX;
+        const dy = moveJoystick.currentY - moveJoystick.startY;
+        player.vx = Math.max(-player.maxSpeed, Math.min(player.maxSpeed, dx / 10));
+        player.vy = Math.max(-player.maxSpeed, Math.min(player.maxSpeed, dy / 10));
+    } else {
+        player.vx *= 0.9; player.vy *= 0.9;
+    }
+    player.x += player.vx; player.y += player.vy;
+    // 边界检查
+    player.x = Math.max(15, Math.min(canvas.width - 15, player.x));
+    player.y = Math.max(15, Math.min(canvas.height - 15, player.y));
+}
+
+function update() {
+    if (gameState.isGameOver) return;
+    gameState.frameCount++;
+    gameState.scrollY += 1.5;
+
+    handleInput();
+    spawnBackground();
+    if (gameState.frameCount % 60 === 0) enemies.push(new Enemy(Math.random()*canvas.width, -50, Object.keys(ENEMY_TYPES)[Math.floor(Math.random()*5)]));
+    if (gameState.frameCount % 180 === 0) groundUnits.push(new Tank(Math.random()*canvas.width));
+
+    // 更新各数组
+    [playerBullets, enemyBullets, enemies, groundUnits, items, bgElements].forEach(arr => {
+        for (let i = arr.length - 1; i >= 0; i--) {
+            arr[i].update();
+            if (arr[i].y > canvas.height + 100 || arr[i].y < -200) arr.splice(i, 1);
+        }
+    });
+
+    player.wingmans.forEach(w => w.update());
+    if (player.shootCooldown > 0) player.shootCooldown--;
+    else {
+        playerBullets.push(new PlayerBullet(player.x, player.y - 20, 0, -10, player.weaponLevel >= 3 ? 'bomb' : 'normal'));
+        player.shootCooldown = player.maxShootCooldown;
+    }
+
+    // 碰撞检测：玩家子弹击中敌人
+    playerBullets.forEach((b, bi) => {
+        enemies.concat(groundUnits).forEach((e, ei) => {
+            if (Math.hypot(b.x - e.x, b.y - e.y) < 25) {
+                e.health -= b.damage;
+                playerBullets.splice(bi, 1);
+                if (e.health <= 0) {
+                    gameState.score += 10;
+                    if (Math.random() < 0.2) items.push(new Item(e.x, e.y, ['health', 'wingman', 'weapon'][Math.floor(Math.random()*3)]));
+                }
+            }
+        });
+    });
+
+    // 碰撞检测：敌人子弹击中玩家
+    enemyBullets.forEach((b, bi) => {
+        if (Math.hypot(b.x - player.x, b.y - player.y) < 15) {
+            player.health -= 10;
+            enemyBullets.splice(bi, 1);
+            if (player.health <= 0) {
+                gameState.isGameOver = true;
+                document.getElementById('gameover').style.display = 'block';
+                document.getElementById('finalScore').innerText = gameState.score;
+            }
+        }
+    });
+
+    // 碰撞检测：玩家捡道具
+    items.forEach((it, ii) => {
+        if (Math.hypot(it.x - player.x, it.y - player.y) < 20) {
+            if (it.type === 'health') player.health = Math.min(100, player.health + 20);
+            if (it.type === 'wingman' && player.wingmans.length < 2) player.wingmans.push(new Wingman(player.wingmans.length === 0 ? -1 : 1));
+            if (it.type === 'weapon') player.weaponLevel++;
+            items.splice(ii, 1);
+            playSound(1000, 0.1);
+        }
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 绘制背景
+    bgElements.forEach(bg => {
+        ctx.fillStyle = TERRAIN[bg.type];
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(bg.x - bg.w/2, bg.y - bg.h/2, bg.w, bg.h);
+        ctx.globalAlpha = 1.0;
+    });
+
+    [groundUnits, enemies, playerBullets, enemyBullets, items].forEach(arr => arr.forEach(obj => obj.draw()));
+    
+    player.wingmans.forEach(w => w.draw());
+
+    // 绘制玩家
+    ctx.fillStyle = '#00d2d3';
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y - 20);
+    ctx.lineTo(player.x + 15, player.y + 10);
+    ctx.lineTo(player.x - 15, player.y + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    // 更新 UI
+    document.getElementById('score').innerText = gameState.score;
+    document.getElementById('height').innerText = Math.floor(gameState.scrollY / 10);
+    document.getElementById('healthFill').style.width = player.health + '%';
+    document.getElementById('wingmanCount').innerText = player.wingmans.length;
+    document.getElementById('weaponType').innerText = player.weaponLevel >= 3 ? '重型炮' : '普通弹';
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// ========== 触摸与交互 ==========
+canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    moveJoystick.active = true;
+    moveJoystick.startX = t.clientX; moveJoystick.startY = t.clientY;
+    moveJoystick.currentX = t.clientX; moveJoystick.currentY = t.clientY;
+    if (audioCtx?.state === 'suspended') audioCtx.resume();
+});
+canvas.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    moveJoystick.currentX = t.clientX; moveJoystick.currentY = t.clientY;
+});
+canvas.addEventListener('touchend', () => moveJoystick.active = false);
+
+// 鼠标支持
+canvas.addEventListener('mousedown', e => {
+    moveJoystick.active = true;
+    moveJoystick.startX = e.clientX; moveJoystick.startY = e.clientY;
+    moveJoystick.currentX = e.clientX; moveJoystick.currentY = e.clientY;
+});
+window.addEventListener('mousemove', e => {
+    if (moveJoystick.active) { moveJoystick.currentX = e.clientX; moveJoystick.currentY = e.clientY; }
+});
+window.addEventListener('mouseup', () => moveJoystick.active = false);
+
+function resetGame() { location.reload(); }
+
+loop();
+</script>
+</body>
+</html>
