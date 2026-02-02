@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spring Launcher: Cyber Sound Pro</title>
+    <style>
+        :root { --accent: #00ffaa; --bg: #05050a; }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: sans-serif; color: white; touch-action: none; user-select: none; }
+        canvas { display: block; }
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; padding: 25px; box-sizing: border-box; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }
+        .header { position: absolute; top: 25px; left: 50%; transform: translateX(-50%); text-align: center; min-width: 220px; }
+        .score-big { font-size: 40px; font-weight: 900; margin: 5px 0; color: #fff; text-shadow: 0 0 20px var(--accent); }
+        .status-text { color: var(--accent); font-size: 10px; letter-spacing: 2px; }
+        .footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; }
+        .m-btn { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #888; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 12px; font-weight: bold; }
+        .m-btn.active { background: var(--accent); color: #000; border-color: #fff; box-shadow: 0 0 20px var(--accent); }
+        .power-container { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); width: 250px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        #power-bar { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <div class="header glass-panel">
+            <div class="status-text" id="status-hint">点击屏幕激活音效</div>
+            <h1 class="score-big" id="main-score">0</h1>
+            <div style="font-size: 10px; opacity: 0.5;">TOTAL SCORE</div>
+        </div>
+        <div class="footer glass-panel">
+            <button class="m-btn active" onclick="setMat('grass', this)">GRASS</button>
+            <button class="m-btn" onclick="setMat('ice', this)">ICE</button>
+            <button class="m-btn" onclick="setMat('rubber', this)">RUBBER</button>
+        </div>
+    </div>
+
+    <div class="power-container"><div id="power-bar"></div></div>
+    <canvas id="game"></canvas>
+
+<script>
+// --- 核心音效引擎 ---
+const AudioSys = {
+    ctx: null,
+    init() { 
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+        }
+    },
+    // 通用振荡器音效
+    beep(freq, type, duration, vol) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    // 蓄力音效（频率滑升）
+    charge(p) {
+        if (!this.ctx) return;
+        this.beep(200 + p * 8, 'sine', 0.1, 0.05);
+    }
+};
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+const MATERIALS = {
+    grass: { friction: 0.96, bounce: 0.4, color: '#00ffaa' },
+    ice: { friction: 0.994, bounce: 0.2, color: '#00f2ff' },
+    rubber: { friction: 0.95, bounce: 0.88, color: '#ff0077' }
+};
+
+const BALL_COLORS = ['#00f2ff', '#70ff00', '#ff0077', '#ffcc00', '#ae00ff'];
+
+let currentMat = MATERIALS.grass;
+const GRAVITY = 0.48;
+const SPRING_BASE = { x: 100, y: 0 };
+const MIN_ANGLE = -Math.PI / 2 + 0.1;
+const MAX_ANGLE = -0.2;
+
+let state = {
+    ball: { x: 0, y: 0, vx: 0, vy: 0, active: false, r: 15, color: BALL_COLORS[0] },
+    spring: { compress: 0, angle: -Math.PI/4, active: false, baseLen: 120 },
+    totalScore: 0,
+    zones: [],
+    waiting: false
+};
+
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    SPRING_BASE.y = H - 120;
+    state.zones = [];
+    const zoneW = (W - 350) / 10;
+    for(let i=0; i<10; i++) state.zones.push({ x1: 300 + i*zoneW, x2: 300 + (i+1)*zoneW, val: i+1 });
+    if(!state.ball.active) resetBall();
+}
+window.onresize = resize; resize();
+
+function setMat(type, btn) {
+    AudioSys.init();
+    currentMat = MATERIALS[type];
+    document.body.style.setProperty('--accent', currentMat.color);
+    document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    AudioSys.beep(400, 'sine', 0.2, 0.1);
+}
+
+function updateAngle(e) {
+    if(state.ball.active || state.waiting) return;
+    const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+    state.spring.angle = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, Math.atan2(clientY - SPRING_BASE.y, clientX - SPRING_BASE.x)));
+}
+
+function update() {
+    if (state.spring.active) {
+        state.spring.compress = Math.min(100, state.spring.compress + 2);
+        document.getElementById('power-bar').style.width = state.spring.compress + "%";
+        // 蓄力滴答声
+        if(Math.floor(state.spring.compress) % 5 === 0) AudioSys.charge(state.spring.compress);
+    }
+
+    if (state.ball.active) {
+        state.ball.vy += GRAVITY;
+        state.ball.x += state.ball.vx;
+        state.ball.y += state.ball.vy;
+
+        const groundY = H - 120;
+        if (state.ball.y + state.ball.r > groundY) {
+            state.ball.y = groundY - state.ball.r;
+            state.ball.vy = -state.ball.vy * currentMat.bounce;
+            state.ball.vx *= currentMat.friction;
+
+            // 落地音效
+            if (Math.abs(state.ball.vy) > 0.5) {
+                AudioSys.beep(100 + Math.abs(state.ball.vy)*20, 'triangle', 0.1, 0.05);
+            }
+
+            if (Math.abs(state.ball.vy) < 0.4 && Math.abs(state.ball.vx) < 0.1) {
+                state.ball.active = false; state.waiting = true;
+                calculateScore();
+            }
+        }
+        if (state.ball.x > W || state.ball.x < 0) { state.ball.active = false; state.waiting = true; calculateScore(); }
+    }
+}
+
+function calculateScore() {
+    let score = 0;
+    state.zones.forEach(z => { if (state.ball.x > z.x1 && state.ball.x < z.x2) score = z.val; });
+    state.totalScore += score;
+    document.getElementById('main-score').innerText = state.totalScore;
+    document.getElementById('status-hint').innerText = score > 0 ? `SCORE +${score}` : "MISS";
+    
+    // 得分成功音效
+    if(score > 0) {
+        AudioSys.beep(500, 'sine', 0.1, 0.1);
+        setTimeout(() => AudioSys.beep(800, 'sine', 0.2, 0.1), 100);
+    } else {
+        AudioSys.beep(150, 'sawtooth', 0.3, 0.1);
+    }
+
+    setTimeout(() => { state.waiting = false; resetBall(); }, 2000);
+}
+
+function resetBall() {
+    state.ball.color = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+    state.spring.compress = 0;
+    document.getElementById('power-bar').style.width = "0%";
+    document.getElementById('status-hint').innerText = "AIM AND HOLD";
+}
+
+function draw() {
+    ctx.fillStyle = '#05050a'; ctx.fillRect(0,0,W,H);
+
+    // 地面
+    ctx.strokeStyle = currentMat.color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, H-120); ctx.lineTo(W, H-120); ctx.stroke();
+    
+    // 计分区
+    state.zones.forEach(z => {
+        ctx.fillStyle = currentMat.color; ctx.globalAlpha = 0.08;
+        ctx.fillRect(z.x1, H-120, z.x2-z.x1, 120);
+        ctx.globalAlpha = 0.5; ctx.fillStyle = "#fff"; ctx.font = "bold 14px monospace";
+        ctx.fillText(z.val + "P", z.x1 + 5, H-90);
+    });
+
+    // 弹簧
+    ctx.save();
+    ctx.translate(SPRING_BASE.x, SPRING_BASE.y);
+    ctx.rotate(state.spring.angle);
+    const currentLen = state.spring.baseLen - state.spring.compress * 0.7;
+    ctx.strokeStyle = state.spring.active ? state.ball.color : "#fff"; 
+    ctx.lineWidth = 4;
+    if(state.spring.active) { ctx.shadowBlur = 15; ctx.shadowColor = state.ball.color; }
+    ctx.beginPath(); ctx.moveTo(0,0);
+    for(let i=0; i<=15; i++) {
+        let px = (i/15) * currentLen;
+        let py = (i===0 || i===15) ? 0 : (i%2===0 ? -16 : 16);
+        ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 球
+    let bx, by;
+    if (state.ball.active || state.waiting) {
+        bx = state.ball.x; by = state.ball.y;
+    } else {
+        const cLen = state.spring.baseLen - state.spring.compress*0.7 + 25;
+        bx = SPRING_BASE.x + Math.cos(state.spring.angle) * cLen;
+        by = SPRING_BASE.y + Math.sin(state.spring.angle) * cLen;
+    }
+    ctx.save();
+    ctx.shadowBlur = 20; ctx.shadowColor = state.ball.color;
+    ctx.fillStyle = state.ball.color;
+    ctx.beginPath(); ctx.arc(bx, by, state.ball.r, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+/** 交互逻辑 **/
+const start = (e) => { 
+    if(state.ball.active || state.waiting || e.target.tagName === 'BUTTON') return; 
+    AudioSys.init(); 
+    state.spring.active = true; 
+};
+const end = () => {
+    if (!state.spring.active) return;
+    state.spring.active = false;
+    const power = state.spring.compress * 0.42;
+    const cLen = state.spring.baseLen - state.spring.compress*0.7 + 25;
+    state.ball.x = SPRING_BASE.x + Math.cos(state.spring.angle) * cLen;
+    state.ball.y = SPRING_BASE.y + Math.sin(state.spring.angle) * cLen;
+    state.ball.vx = Math.cos(state.spring.angle) * power;
+    state.ball.vy = Math.sin(state.spring.angle) * power;
+    state.ball.active = true;
+    // 发射声
+    AudioSys.beep(200, 'square', 0.2, 0.1);
+};
+
+window.addEventListener('mousemove', updateAngle);
+window.addEventListener('mousedown', start);
+window.addEventListener('mouseup', end);
+window.addEventListener('touchstart', (e) => { updateAngle(e); start(e); }, {passive:false});
+window.addEventListener('touchend', end);
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>
