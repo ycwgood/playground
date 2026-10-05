@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>家庭阵地战：初一少年的逆袭 (三国杀卡牌对战版)</title>
+  <title>家庭阵地战：初一少年的逆袭 (三国杀对战典藏版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;800;900&display=swap');
@@ -25,11 +25,11 @@
       margin: 0;
     }
 
-    /* 适配 iPad 11" (1194x834) 和 MacBook Pro 13" (1280x800) 等小屏幕 */
+    /* 适配 iPad 11" (1194x834) 和 MacBook Pro 13" (1280x800) */
     .game-viewport {
       height: 100vh;
-      max-height: 840px;
-      max-width: 1240px;
+      max-height: 850px;
+      max-width: 1260px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -39,7 +39,7 @@
       position: relative;
     }
 
-    /* 受击震动与红闪动画 */
+    /* 击中抖动 */
     @keyframes hitShake {
       0%, 100% { transform: translate(0, 0); }
       20% { transform: translate(-8px, 4px) rotate(-1deg); }
@@ -49,28 +49,12 @@
     }
     .animate-shake { animation: hitShake 0.4s ease-in-out; }
 
-    /* 装备穿戴光效脉冲 */
-    @keyframes equipPulse {
-      0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); transform: scale(1); }
-      50% { box-shadow: 0 0 18px rgba(245, 158, 11, 0.8); transform: scale(1.05); }
-      100% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); transform: scale(1); }
-    }
-    .equip-active { animation: equipPulse 0.6s ease-in-out; }
-
-    /* 耳机护盾脉冲动画 */
-    @keyframes headphonePulse {
-      0% { box-shadow: 0 0 0px rgba(56, 189, 248, 0); transform: scale(1); }
-      50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.95); transform: scale(1.06); }
-      100% { box-shadow: 0 0 0px rgba(56, 189, 248, 0); transform: scale(1); }
-    }
-    .headphone-active { animation: headphonePulse 0.8s ease-in-out; }
-
-    /* 浮动伤害与治疗数字动画 */
+    /* 浮动伤害与治疗数字 */
     @keyframes floatTextAnim {
       0% { opacity: 0; transform: translateY(10px) scale(0.7); }
-      20% { opacity: 1; transform: translateY(-10px) scale(1.3); }
-      80% { opacity: 1; transform: translateY(-35px) scale(1); }
-      100% { opacity: 0; transform: translateY(-50px) scale(0.8); }
+      20% { opacity: 1; transform: translateY(-12px) scale(1.3); }
+      80% { opacity: 1; transform: translateY(-38px) scale(1); }
+      100% { opacity: 0; transform: translateY(-55px) scale(0.8); }
     }
     .floating-num {
       position: absolute;
@@ -79,21 +63,21 @@
       pointer-events: none;
       z-index: 60;
       animation: floatTextAnim 1.1s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.9);
     }
 
     /* 出牌飞入中央特效 */
     @keyframes cardPlayAnim {
-      0% { transform: scale(0.3) translateY(120px) rotate(-10deg); opacity: 0; }
-      50% { transform: scale(1.2) translateY(0) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px #f59e0b); }
-      80% { transform: scale(1.05) translateY(0); opacity: 1; }
+      0% { transform: scale(0.3) translateY(100px) rotate(-10deg); opacity: 0; }
+      50% { transform: scale(1.15) translateY(0) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 20px #f59e0b); }
+      80% { transform: scale(1.02) translateY(0); opacity: 1; }
       100% { transform: scale(1) translateY(0); opacity: 1; }
     }
     .card-played-active {
       animation: cardPlayAnim 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
-    /* 回合切换横幅滑入 */
+    /* 回合切换横幅 */
     @keyframes bannerSlide {
       0% { transform: translateX(-100%) scaleX(0.5); opacity: 0; }
       25% { transform: translateX(0) scaleX(1); opacity: 1; }
@@ -104,24 +88,23 @@
       animation: bannerSlide 1.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
-    /* 美化滚动条 */
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-    /* 手牌悬停与交互 */
+    /* 手牌悬停 */
     .card-item {
       transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: bottom center;
     }
     .card-item:hover {
-      transform: translateY(-12px) scale(1.08);
+      transform: translateY(-14px) scale(1.08);
       z-index: 30;
-      box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 12px 25px -5px rgba(56, 189, 248, 0.4);
     }
 
     .glass-panel {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -134,7 +117,7 @@
     .equip-slot.filled {
       border-style: solid;
       border-color: rgba(245, 158, 11, 0.5);
-      background: rgba(245, 158, 11, 0.08);
+      background: rgba(245, 158, 11, 0.1);
     }
   </style>
 </head>
@@ -142,12 +125,11 @@
 
 <div class="game-viewport w-full" id="game-app">
 
-  <!-- 顶部：电脑对手面板 -->
+  <!-- 顶部：AI 对手面板 -->
   <div id="ai-panel" class="glass-panel rounded-2xl p-2 md:p-2.5 flex items-center justify-between shadow-2xl relative overflow-hidden transition-all border-amber-500/20">
-    <!-- 左侧：角色形象与信息 -->
     <div class="flex items-center gap-3 z-10">
       <div id="ai-avatar-box" class="relative">
-        <div id="ai-avatar" class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-amber-950/80 border-2 border-amber-500/50 flex items-center justify-center text-2xl md:text-3xl shadow-inner flex-shrink-0 transition-transform">
+        <div id="ai-avatar" class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-amber-950/80 border-2 border-amber-500/50 flex items-center justify-center text-2xl md:text-3xl shadow-inner flex-shrink-0">
           👵
         </div>
       </div>
@@ -158,15 +140,11 @@
             卷王导师
           </span>
         </div>
-        <!-- 专属语录 -->
         <p id="ai-quote" class="text-xs text-slate-300 italic mt-0.5 max-w-sm md:max-w-lg line-clamp-1">
-          “都是为了你好！今天必须把这5套卷子刷完，再去上奥数班！”
+          “都是为了你好！今天必须把这5套卷子刷完！”
         </p>
-        <!-- 血量与护盾 -->
         <div class="flex items-center gap-3 mt-1">
-          <div class="flex items-center gap-1" id="ai-hp-container">
-            <!-- 动态生成血量 -->
-          </div>
+          <div class="flex items-center gap-1" id="ai-hp-container"></div>
           <div id="ai-armor-badge" class="hidden flex items-center gap-1 px-2 py-0.5 bg-blue-900/60 border border-blue-400/40 rounded-full text-[10px] text-blue-200 font-bold">
             🛡️ 护盾: <span id="ai-armor-val">0</span>
           </div>
@@ -174,7 +152,7 @@
       </div>
     </div>
 
-    <!-- 中间：长辈装备栏 (武器/防具/宝物) -->
+    <!-- AI 装备栏 -->
     <div class="hidden sm:flex items-center gap-1.5 z-10" id="ai-equip-panel">
       <div id="ai-eq-weapon" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[90px]">
         <span>⚔️</span><span class="slot-name">无武器</span>
@@ -187,49 +165,46 @@
       </div>
     </div>
 
-    <!-- 右侧：音效控制与长辈手牌信息 -->
+    <!-- 右侧工具栏与手牌数 -->
     <div class="flex items-center gap-2 z-10">
+      <button onclick="openSelectModal()" class="px-2 py-1.5 rounded-xl bg-amber-900/50 hover:bg-amber-800/80 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1 text-amber-200">
+        <span>🔄</span> <span class="hidden md:inline">重选角色</span>
+      </button>
       <button onclick="toggleSoundToggle()" id="btn-sound-toggle" class="px-2 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-bold hover:bg-slate-700 transition flex items-center gap-1 text-slate-200">
         <span id="sound-icon">🔊</span> <span id="sound-text" class="hidden md:inline">音效开启</span>
       </button>
       <div class="bg-slate-900/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5">
-        <span class="text-xs text-slate-400 font-semibold">长辈手牌</span>
+        <span class="text-xs text-slate-400 font-semibold">对手手牌</span>
         <span id="ai-card-count" class="text-sm md:text-base font-black text-amber-400">4</span>
         <span class="text-xs text-slate-400">张</span>
       </div>
     </div>
   </div>
 
-  <!-- 中部：对决战场、战报面板与桌面 -->
+  <!-- 中部：实况战报与中央对决 -->
   <div class="flex-1 grid grid-cols-12 gap-3 min-h-0 relative">
-
-    <!-- 回合提示 banner (滑入动画) -->
     <div id="turn-banner" class="hidden absolute inset-x-0 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-r from-amber-600/90 via-sky-600/90 to-purple-600/90 py-2 shadow-2xl backdrop-blur-md flex items-center justify-center border-y-2 border-white/20 pointer-events-none">
       <span id="turn-banner-text" class="text-base md:text-lg font-black text-white tracking-widest drop-shadow-md">
         👦 你的回合开始！
       </span>
     </div>
 
-    <!-- 战报实况日志 (占7列) -->
+    <!-- 战报实况日志 (7列) -->
     <div class="col-span-7 glass-panel rounded-2xl p-2.5 flex flex-col justify-between overflow-hidden shadow-inner border border-slate-800">
       <div class="flex items-center justify-between border-b border-slate-800/80 pb-1 mb-1">
         <span class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          家庭阵地对决实况日志
+          家庭与学校阵地对决实况
         </span>
         <span id="headphones-indicator" class="text-[10px] md:text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-          🎧 防具/装备机制生效中
+          🎧 装备与防具生效中
         </span>
       </div>
-      <!-- 日志框 -->
-      <div id="battle-log" class="flex-1 overflow-y-auto space-y-1 pr-1 text-xs leading-snug">
-        <!-- 动态日志 -->
-      </div>
+      <div id="battle-log" class="flex-1 overflow-y-auto space-y-1 pr-1 text-xs leading-snug"></div>
     </div>
 
-    <!-- 出牌展示区与牌堆 (占5列) -->
+    <!-- 中央出牌与牌堆 (5列) -->
     <div class="col-span-5 glass-panel rounded-2xl p-2.5 flex flex-col items-center justify-between gap-2 relative overflow-hidden">
-      <!-- 摸牌堆与弃牌堆信息 -->
       <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-1 rounded-xl border border-slate-800 w-full justify-around">
         <div class="text-center">
           <div class="text-[9px] text-slate-400 font-bold uppercase">牌堆剩余</div>
@@ -242,149 +217,135 @@
         </div>
       </div>
 
-      <!-- 桌面中央出牌呈现 -->
       <div class="flex flex-col items-center justify-center flex-1 w-full border border-dashed border-slate-800/80 rounded-xl bg-slate-950/40 p-2 text-center relative">
-        <span class="text-[10px] text-slate-500 font-semibold mb-1">中央战场 / 当前打出</span>
+        <span class="text-[10px] text-slate-500 font-semibold mb-1">中央战场 / 最近打出</span>
         <div id="last-card-box" class="transition-all duration-300">
           <div id="last-card-display" class="text-xs font-black text-amber-300 py-1.5 px-3 bg-amber-500/10 border border-amber-500/30 rounded-xl shadow-lg">
-            等待对局开始
+            准备开始对局
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 底部：玩家 (13岁少年) 区域 -->
+  <!-- 底部：玩家控制区 -->
   <div class="flex flex-col gap-1.5">
-
-    <!-- 玩家属性、装备栏与操作控制栏 -->
     <div id="player-panel" class="glass-panel rounded-2xl p-2 flex items-center justify-between border-sky-500/30 shadow-lg">
       <div class="flex items-center gap-2.5">
-        <!-- 少年头像 -->
         <div id="player-avatar-box" class="relative">
-          <div id="player-avatar" class="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-sky-950/80 border-2 border-sky-400/60 flex items-center justify-center text-xl md:text-2xl shadow-inner flex-shrink-0 transition-transform">
+          <div id="player-avatar" class="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-sky-950/80 border-2 border-sky-400/60 flex items-center justify-center text-xl md:text-2xl shadow-inner flex-shrink-0">
             👦
           </div>
         </div>
 
         <div>
           <div class="flex items-center gap-1.5">
-            <h3 class="text-xs md:text-sm font-black text-sky-300">初一少年 (13岁)</h3>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200 border border-sky-500/30">
-              【自主】上限=HP+1
-            </span>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-500/30" title="装备槽满或有防具时，受技能伤害-1">
-              【减压】被动
+            <h3 id="player-hero-name" class="text-xs md:text-sm font-black text-sky-300">初一少年</h3>
+            <span id="player-hero-title" class="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200 border border-sky-500/30">
+              13岁叛逆
             </span>
           </div>
 
-          <!-- 血量与状态 -->
           <div class="flex items-center gap-2 mt-0.5">
-            <div class="flex items-center gap-0.5" id="player-hp-container">
-              <!-- 动态心形 -->
-            </div>
+            <div class="flex items-center gap-0.5" id="player-hp-container"></div>
             <span id="debuff-tag-cold" class="hidden text-[9px] bg-sky-950 text-sky-300 border border-sky-500/40 px-1 py-0.2 rounded-full font-bold">
-              🧥 秋裤锁板
-            </span>
-            <span id="debuff-tag-lock" class="hidden text-[9px] bg-purple-950 text-purple-300 border border-purple-500/40 px-1 py-0.2 rounded-full font-bold">
-              🔒 谣言锁牌
+              🧥 禁吃桃/被套锁
             </span>
           </div>
         </div>
       </div>
 
-      <!-- 玩家三大装备槽 (武器 / 防具 / 宝物) -->
+      <!-- 玩家装备槽 -->
       <div class="flex items-center gap-1.5" id="player-equip-panel">
-        <div id="player-eq-weapon" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[100px]" title="点击卸下或更换">
+        <div id="player-eq-weapon" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[95px]">
           <span>⚔️</span><span class="slot-name">无武器</span>
         </div>
-        <div id="player-eq-armor" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[100px]">
+        <div id="player-eq-armor" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[95px]">
           <span>🛡️</span><span class="slot-name">无防具</span>
         </div>
-        <div id="player-eq-treasure" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[100px]">
+        <div id="player-eq-treasure" class="equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-400 min-w-[95px]">
           <span>🏺</span><span class="slot-name">无宝物</span>
         </div>
       </div>
 
-      <!-- 操作按钮区 (悔一步撤销、技能、结束回合) -->
+      <!-- 操作按钮区 -->
       <div class="flex items-center gap-1.5">
-        <!-- 悔一步 (撤销) 按钮 -->
         <button id="btn-undo" onclick="undoStep()" disabled class="px-2 md:px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-600/50 shadow transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1">
           <span>↺ 悔一步</span>
         </button>
 
-        <!-- 叛逆技能按钮 -->
-        <button id="btn-rebel" onclick="useRebelSkill()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-bold text-xs shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center">
-          <span>⚡ 发动【叛逆】</span>
-          <span class="text-[8px] font-normal text-amber-200">弃1牌造1伤/闪当杀</span>
+        <button id="btn-hero-skill" onclick="useHeroActiveSkill()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-bold text-xs shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center">
+          <span id="hero-skill-btn-text">⚡ 发动【技能】</span>
+          <span id="hero-skill-subtext" class="text-[8px] font-normal text-amber-200">角色专属技</span>
         </button>
 
-        <!-- 结束回合按钮 -->
         <button id="btn-end-turn" onclick="endPlayerTurn()" class="px-3 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-black text-xs md:text-sm shadow-lg border border-sky-400/30 transition disabled:opacity-40 disabled:cursor-not-allowed">
           结束回合
         </button>
       </div>
     </div>
 
-    <!-- 手牌展示区 (支持触控滑动) -->
+    <!-- 玩家手牌区 -->
     <div class="glass-panel rounded-2xl p-1.5 min-h-[120px] md:min-h-[135px] flex items-center">
-      <div id="player-hand" class="flex gap-2 overflow-x-auto w-full py-0.5 px-0.5">
-        <!-- 动态生成卡牌 -->
-      </div>
+      <div id="player-hand" class="flex gap-2 overflow-x-auto w-full py-0.5 px-0.5"></div>
     </div>
   </div>
 
 </div>
 
-<!-- 开局随机角色展示与台词动画弹窗 -->
-<div id="intro-modal-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-  <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-5 md:p-6 max-w-md w-full shadow-2xl flex flex-col items-center text-center animate-shake">
-    <div id="intro-avatar" class="text-6xl mb-2 bg-amber-950/60 p-3 rounded-full border border-amber-500/40">👵</div>
-    <div class="flex items-center gap-2 mb-1">
-      <h3 id="intro-name" class="text-xl font-black text-amber-300">角色名称</h3>
-      <span id="intro-badge" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30">角色标签</span>
-    </div>
-    <p id="intro-quote" class="text-xs md:text-sm text-slate-300 italic mb-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 w-full">
-      “角色专属台词...”
-    </p>
-
-    <div class="w-full text-left bg-slate-950/80 p-3 rounded-2xl border border-slate-800 mb-4 text-xs space-y-1.5">
-      <div class="font-bold text-amber-400 flex items-center gap-1">
-        <span>⚡ 长辈双重特色技能：</span>
-      </div>
-      <div id="intro-skills" class="text-slate-300 space-y-1">
-        <!-- 技能列表 -->
-      </div>
+<!-- 开局角色选择模态框 -->
+<div id="select-modal-overlay" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-3">
+  <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-4 md:p-6 max-w-2xl w-full shadow-2xl flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+    <div class="text-center">
+      <h2 class="text-xl md:text-2xl font-black text-amber-300">⚔️ 对战前准备：选择对决阵容</h2>
+      <p class="text-xs text-slate-400 mt-1">选择你的学生英雄与压制你的长辈/老师阵营对手！</p>
     </div>
 
-    <button onclick="closeIntroModal()" class="w-full py-2.5 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black rounded-2xl shadow-xl transition text-sm">
-      ⚔️ 开始家庭阵地对决！
-    </button>
+    <!-- 1. 选择玩家角色 -->
+    <div>
+      <h3 class="text-xs font-bold text-sky-300 mb-2 flex items-center gap-1">
+        <span>👦 第一步：选择【我的学生英雄】</span>
+      </h3>
+      <div id="hero-select-grid" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+    </div>
+
+    <!-- 2. 选择对手角色 (长辈 / 教师) -->
+    <div>
+      <h3 class="text-xs font-bold text-amber-300 mb-2 flex items-center gap-1">
+        <span>👵/👨‍🏫 第二步：选择【对手角色】（6长辈 + 5老师）</span>
+      </h3>
+      <div id="ai-select-grid" class="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1 bg-slate-950/50 rounded-2xl border border-slate-800"></div>
+    </div>
+
+    <div class="flex items-center gap-3 mt-2">
+      <button onclick="selectRandomAI()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-2xl border border-amber-500/30 transition text-xs md:text-sm">
+        🎲 随机匹配对手
+      </button>
+      <button onclick="confirmCharacterSelection()" class="flex-1 py-2.5 bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-black rounded-2xl shadow-xl transition text-xs md:text-sm">
+        ⚔️ 确定角色并开战！
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- 决策/响应通用交互弹窗 -->
+<!-- 决策与互动答题 Prompt 模态框 -->
 <div id="prompt-modal-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
   <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl flex flex-col items-center text-center">
     <div id="prompt-icon" class="text-4xl mb-2">⚠️</div>
     <h4 id="prompt-title" class="text-base font-bold text-amber-200 mb-1">长辈招式来袭！</h4>
     <p id="prompt-desc" class="text-xs text-slate-300 mb-4 leading-relaxed">决策描述文本...</p>
-    <div id="prompt-buttons" class="flex flex-col gap-2 w-full">
-      <!-- 决策按钮列表 -->
-    </div>
+    <div id="prompt-buttons" class="flex flex-col gap-2 w-full"></div>
   </div>
 </div>
 
-<!-- 游戏结束结算弹窗 -->
+<!-- 结算弹窗 -->
 <div id="end-modal-overlay" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
   <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col items-center text-center">
     <div id="end-icon" class="text-5xl mb-3">🏆</div>
     <h3 id="end-title" class="text-xl font-black text-amber-300 mb-2">对局结束</h3>
-    <p id="end-message" class="text-xs md:text-sm text-slate-300 mb-6 leading-relaxed">
-      详细战果描述...
-    </p>
-    <button onclick="restartGame()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl shadow-lg transition text-sm">
-      🔄 重新对局 (随机更换长辈)
+    <p id="end-message" class="text-xs md:text-sm text-slate-300 mb-6 leading-relaxed whitespace-pre-line"></p>
+    <button onclick="openSelectModal()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl shadow-lg transition text-sm">
+      🔄 重新选择角色对决
     </button>
   </div>
 </div>
@@ -402,9 +363,7 @@
     init() {
       if (!this.ctx) {
         const AudioCtxFunc = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtxFunc) {
-          this.ctx = new AudioCtxFunc();
-        }
+        if (AudioCtxFunc) this.ctx = new AudioCtxFunc();
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
@@ -416,7 +375,6 @@
       return this.enabled;
     }
 
-    // 摸牌音效
     playWhoosh() {
       if (!this.enabled) return;
       this.init();
@@ -444,29 +402,6 @@
       noise.start();
     }
 
-    // 点击/打牌音效
-    playSnap() {
-      if (!this.enabled) return;
-      this.init();
-      if (!this.ctx) return;
-      const ctx = this.ctx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(700, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.06);
-
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.06);
-    }
-
-    // 装备音效
     playEquip() {
       if (!this.enabled) return;
       this.init();
@@ -474,21 +409,17 @@
       const ctx = this.ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(400, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
-
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
     }
 
-    // 攻击音效
     playAttack() {
       if (!this.enabled) return;
       this.init();
@@ -496,48 +427,35 @@
       const ctx = this.ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(280, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
-
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.2);
       gain.gain.setValueAtTime(0.4, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.2);
     }
 
-    // 护盾/闪避音效
     playShield() {
       if (!this.enabled) return;
       this.init();
       if (!this.ctx) return;
       const ctx = this.ctx;
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
+      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
-      osc1.type = 'triangle';
-      osc2.type = 'sine';
-      osc1.frequency.setValueAtTime(1200, ctx.currentTime);
-      osc2.frequency.setValueAtTime(1800, ctx.currentTime);
-
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.connect(gain);
       gain.connect(ctx.destination);
-      osc1.start();
-      osc2.start();
-      osc1.stop(ctx.currentTime + 0.22);
-      osc2.stop(ctx.currentTime + 0.22);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
     }
 
-    // 治疗音效
     playHeal() {
       if (!this.enabled) return;
       this.init();
@@ -549,19 +467,15 @@
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.05);
-
-        gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.05);
-        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + idx * 0.05 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.05 + 0.25);
-
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.05 + 0.2);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(ctx.currentTime + idx * 0.05);
-        osc.stop(ctx.currentTime + idx * 0.05 + 0.25);
+        osc.stop(ctx.currentTime + idx * 0.05 + 0.2);
       });
     }
 
-    // 技能发动音效
     playSkill() {
       if (!this.enabled) return;
       this.init();
@@ -569,21 +483,17 @@
       const ctx = this.ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(90, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.28);
-
-      gain.gain.setValueAtTime(0.4, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.3);
+      osc.stop(ctx.currentTime + 0.25);
     }
 
-    // 伤害音效
     playDamage() {
       if (!this.enabled) return;
       this.init();
@@ -591,21 +501,17 @@
       const ctx = this.ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(160, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.22);
-
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.25);
       gain.gain.setValueAtTime(0.4, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
-
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.22);
+      osc.stop(ctx.currentTime + 0.25);
     }
 
-    // 悔一步撤销音效
     playUndo() {
       if (!this.enabled) return;
       this.init();
@@ -613,21 +519,17 @@
       const ctx = this.ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(650, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
-
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.1);
       gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.08);
+      osc.stop(ctx.currentTime + 0.1);
     }
 
-    // 胜利音效
     playVictory() {
       if (!this.enabled) return;
       this.init();
@@ -638,38 +540,33 @@
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
-
-        gain.gain.setValueAtTime(0.25, ctx.currentTime + idx * 0.09);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.35);
-
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.3);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + idx * 0.09);
-        osc.stop(ctx.currentTime + idx * 0.09 + 0.35);
+        osc.start(ctx.currentTime + idx * 0.08);
+        osc.stop(ctx.currentTime + idx * 0.08 + 0.3);
       });
     }
 
-    // 失败音效
     playDefeat() {
       if (!this.enabled) return;
       this.init();
       if (!this.ctx) return;
       const ctx = this.ctx;
-      const notes = [400, 350, 300, 220];
+      const notes = [380, 320, 260, 200];
       notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
-
-        gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.3);
-
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.25);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + idx * 0.12);
-        osc.stop(ctx.currentTime + idx * 0.12 + 0.3);
+        osc.start(ctx.currentTime + idx * 0.1);
+        osc.stop(ctx.currentTime + idx * 0.1 + 0.25);
       });
     }
   }
@@ -683,242 +580,112 @@
   }
 
   // ==========================================
-  // 三国杀风格卡牌数据库 (基本牌/锦囊牌/装备牌)
+  // 卡牌数据库 (基本/锦囊/装备)
   // ==========================================
   const CARD_DATABASE = {
-    // 基本牌
-    STRIKE: {
-      id: 'STRIKE',
-      type: 'BASIC',
-      name: '表达主见',
-      tag: '杀',
-      icon: '🗣️',
-      color: 'from-red-950 to-slate-900 border-red-500/50 text-red-300',
-      badge: 'bg-red-500/20 text-red-200',
-      desc: '表达独立主见。长辈需打出【巧妙化解】，否则受到1点伤害。'
-    },
-    DODGE: {
-      id: 'DODGE',
-      type: 'BASIC',
-      name: '巧妙化解',
-      tag: '闪',
-      icon: '🛡️️',
-      color: 'from-sky-950 to-slate-900 border-sky-500/50 text-sky-300',
-      badge: 'bg-sky-500/20 text-sky-200',
-      desc: '巧妙化解长辈的说教、报班轰炸或强行压制。'
-    },
-    HEAL: {
-      id: 'HEAL',
-      type: 'BASIC',
-      name: '喘息复原',
-      tag: '桃',
-      icon: '🏸',
-      color: 'from-emerald-950 to-slate-900 border-emerald-500/50 text-emerald-300',
-      badge: 'bg-emerald-500/20 text-emerald-200',
-      desc: '打羽毛球/吃零食/玩会儿游戏。回复1点体力值。'
-    },
+    STRIKE: { id: 'STRIKE', type: 'BASIC', name: '表达主见', tag: '杀', icon: '🗣️', color: 'from-red-950 to-slate-900 border-red-500/50 text-red-300', badge: 'bg-red-500/20 text-red-200', desc: '表达独立主见。对方需打出【巧妙化解】，否则受到1点伤害。' },
+    DODGE: { id: 'DODGE', type: 'BASIC', name: '巧妙化解', tag: '闪', icon: '🛡️', color: 'from-sky-950 to-slate-900 border-sky-500/50 text-sky-300', badge: 'bg-sky-500/20 text-sky-200', desc: '巧妙化解对方的说教、攻势或压制。' },
+    HEAL: { id: 'HEAL', type: 'BASIC', name: '喘息复原', tag: '桃', icon: '🏸', color: 'from-emerald-950 to-slate-900 border-emerald-500/50 text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-200', desc: '打羽毛球/吃零食/喝奶茶。回复1点体力值。' },
 
-    // 锦囊牌
-    DRAW2: {
-      id: 'DRAW2',
-      type: 'TACTIC',
-      name: '独立思考',
-      tag: '锦囊',
-      icon: '💡',
-      color: 'from-amber-950 to-slate-900 border-amber-500/50 text-amber-300',
-      badge: 'bg-amber-500/20 text-amber-200',
-      desc: '理清逻辑思路，立即从牌堆额外抽取 2 张卡牌。'
-    },
-    DISCARD: {
-      id: 'DISCARD',
-      type: 'TACTIC',
-      name: '划清界限',
-      tag: '锦囊',
-      icon: '✂️',
-      color: 'from-purple-950 to-slate-900 border-purple-500/50 text-purple-300',
-      badge: 'bg-purple-500/20 text-purple-200',
-      desc: '划清掌控边界，弃置对方 1 张手牌或装备。'
-    },
-    DUEL: {
-      id: 'DUEL',
-      type: 'TACTIC',
-      name: '据理力争',
-      tag: '锦囊',
-      icon: '⚖️',
-      color: 'from-orange-950 to-slate-900 border-orange-500/50 text-orange-300',
-      badge: 'bg-orange-500/20 text-orange-200',
-      desc: '展开逻辑辩论！双方轮流打出【表达主见】，率先无法打出者受到1点伤害。'
-    },
-    STEAL: {
-      id: 'STEAL',
-      type: 'TACTIC',
-      name: '借题发挥',
-      tag: '锦囊',
-      icon: '🎯',
-      color: 'from-teal-950 to-slate-900 border-teal-500/50 text-teal-300',
-      badge: 'bg-teal-500/20 text-teal-200',
-      desc: '借机反客为主，随机获取对方 1 张手牌或 1 件装备。'
-    },
+    DRAW2: { id: 'DRAW2', type: 'TACTIC', name: '独立思考', tag: '锦囊', icon: '💡', color: 'from-amber-950 to-slate-900 border-amber-500/50 text-amber-300', badge: 'bg-amber-500/20 text-amber-200', desc: '理清逻辑思路，立即额外抽取 2 张卡牌。' },
+    DISCARD: { id: 'DISCARD', type: 'TACTIC', name: '划清界限', tag: '锦囊', icon: '✂️', color: 'from-purple-950 to-slate-900 border-purple-500/50 text-purple-300', badge: 'bg-purple-500/20 text-purple-200', desc: '弃置对方 1 张手牌或 1 件装备。' },
+    DUEL: { id: 'DUEL', type: 'TACTIC', name: '据理力争', tag: '锦囊', icon: '⚖️', color: 'from-orange-950 to-slate-900 border-orange-500/50 text-orange-300', badge: 'bg-orange-500/20 text-orange-200', desc: '展开辩论！双方轮流打出【表达主见】，率先无法打出者受到1点伤害。' },
+    STEAL: { id: 'STEAL', type: 'TACTIC', name: '借题发挥', tag: '锦囊', icon: '🎯', color: 'from-teal-950 to-slate-900 border-teal-500/50 text-teal-300', badge: 'bg-teal-500/20 text-teal-200', desc: '获取对方 1 张手牌或 1 件装备。' },
+    SWAP: { id: 'SWAP', type: 'TACTIC', name: '换位思考', tag: '锦囊', icon: '🔄', color: 'from-indigo-950 to-slate-900 border-indigo-500/50 text-indigo-300', badge: 'bg-indigo-500/20 text-indigo-200', desc: '迫使对方做出选择：弃置2张手牌，或受到1点伤害。' },
 
-    // 装备牌 (武器/防具/宝物)
-    EQ_WEAPON1: {
-      id: 'EQ_WEAPON1',
-      type: 'EQUIP',
-      slot: 'weapon',
-      name: '游戏手柄',
-      tag: '武器',
-      icon: '🎮',
-      color: 'from-cyan-950 to-slate-900 border-cyan-500/50 text-cyan-300',
-      badge: 'bg-cyan-500/20 text-cyan-200',
-      desc: '【武器】使用【表达主见】命中时，触发连招效果额外摸1张牌。'
-    },
-    EQ_WEAPON2: {
-      id: 'EQ_WEAPON2',
-      type: 'EQUIP',
-      slot: 'weapon',
-      name: '错题集',
-      tag: '武器',
-      icon: '📖',
-      color: 'from-blue-950 to-slate-900 border-blue-500/50 text-blue-300',
-      badge: 'bg-blue-500/20 text-blue-200',
-      desc: '【武器】使用【表达主见】时，对方需要 2 张【巧妙化解】才能抵消。'
-    },
-    EQ_ARMOR1: {
-      id: 'EQ_ARMOR1',
-      type: 'EQUIP',
-      slot: 'armor',
-      name: '头戴耳机',
-      tag: '防具',
-      icon: '🎧',
-      color: 'from-sky-950 to-slate-900 border-sky-500/50 text-sky-300',
-      badge: 'bg-sky-500/20 text-sky-200',
-      desc: '【防具】每轮首次受到伤害或技能攻击时，自动抵消1点伤害或效果。'
-    },
-    EQ_ARMOR2: {
-      id: 'EQ_ARMOR2',
-      type: 'EQUIP',
-      slot: 'armor',
-      name: '重型羽绒服',
-      tag: '防具',
-      icon: '🧥',
-      color: 'from-indigo-950 to-slate-900 border-indigo-500/50 text-indigo-300',
-      badge: 'bg-indigo-500/20 text-indigo-200',
-      desc: '【防具】受到伤害时，有 50% 概率完全免疫该次伤害。'
-    },
-    EQ_TREASURE1: {
-      id: 'EQ_TREASURE1',
-      type: 'EQUIP',
-      slot: 'treasure',
-      name: '压岁钱存折',
-      tag: '宝物',
-      icon: '🧧',
-      color: 'from-amber-950 to-slate-900 border-amber-500/50 text-amber-300',
-      badge: 'bg-amber-500/20 text-amber-200',
-      desc: '【宝物】经济自主！摸牌阶段额外多摸 1 张牌。'
-    },
-    EQ_TREASURE2: {
-      id: 'EQ_TREASURE2',
-      type: 'EQUIP',
-      slot: 'treasure',
-      name: '筋膜理疗仪',
-      tag: '宝物',
-      icon: '⚡',
-      color: 'from-rose-950 to-slate-900 border-rose-500/50 text-rose-300',
-      badge: 'bg-rose-500/20 text-rose-200',
-      desc: '【宝物】回合结束时若手牌数小于上限，50%概率回复1点体力。'
-    }
+    EQ_WEAPON1: { id: 'EQ_WEAPON1', type: 'EQUIP', slot: 'weapon', name: '游戏手柄', tag: '武器', icon: '🎮', color: 'from-cyan-950 to-slate-900 border-cyan-500/50 text-cyan-300', badge: 'bg-cyan-500/20 text-cyan-200', desc: '【武器】使用【表达主见】命中时，触发连招额外摸1张牌。' },
+    EQ_WEAPON2: { id: 'EQ_WEAPON2', type: 'EQUIP', slot: 'weapon', name: '错题集', tag: '武器', icon: '📖', color: 'from-blue-950 to-slate-900 border-blue-500/50 text-blue-300', badge: 'bg-blue-500/20 text-blue-200', desc: '【武器】使用【表达主见】时，对方需要 2 张【巧妙化解】才能抵消。' },
+    EQ_WEAPON3: { id: 'EQ_WEAPON3', type: 'EQUIP', slot: 'weapon', name: '羽毛球拍', tag: '武器', icon: '🏸', color: 'from-emerald-950 to-slate-900 border-emerald-500/50 text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-200', desc: '【武器】攻击范围提升，使用【表达主见】无次数限制。' },
+
+    EQ_ARMOR1: { id: 'EQ_ARMOR1', type: 'EQUIP', slot: 'armor', name: '降噪耳机', tag: '防具', icon: '🎧', color: 'from-sky-950 to-slate-900 border-sky-500/50 text-sky-300', badge: 'bg-sky-500/20 text-sky-200', desc: '【防具】每轮首次受到伤害或技能攻击时，自动抵消1点伤害。' },
+    EQ_ARMOR2: { id: 'EQ_ARMOR2', type: 'EQUIP', slot: 'armor', name: '防弹作业本', tag: '防具', icon: '📘', color: 'from-indigo-950 to-slate-900 border-indigo-500/50 text-indigo-300', badge: 'bg-indigo-500/20 text-indigo-200', desc: '【防具】受到【表达主见】攻击时，50%概率完全免疫该次伤害。' },
+    EQ_ARMOR3: { id: 'EQ_ARMOR3', type: 'EQUIP', slot: 'armor', name: '重型羽绒服', tag: '防具', icon: '🧥', color: 'from-slate-900 to-zinc-900 border-slate-500/50 text-slate-300', badge: 'bg-slate-500/20 text-slate-200', desc: '【防具】受到的所有技能压制伤害 -1 点。' },
+
+    EQ_TREASURE1: { id: 'EQ_TREASURE1', type: 'EQUIP', slot: 'treasure', name: '压岁钱存折', tag: '宝物', icon: '🧧', color: 'from-amber-950 to-slate-900 border-amber-500/50 text-amber-300', badge: 'bg-amber-500/20 text-amber-200', desc: '【宝物】摸牌阶段额外多摸 1 张牌。' },
+    EQ_TREASURE2: { id: 'EQ_TREASURE2', type: 'EQUIP', slot: 'treasure', name: '保温杯', tag: '宝物', icon: '🍵', color: 'from-rose-950 to-slate-900 border-rose-500/50 text-rose-300', badge: 'bg-rose-500/20 text-rose-200', desc: '【宝物】回合结束时，若手牌数≤1，立即回复1点体力或获得1层护盾。' }
   };
 
-  // 6大电脑长辈武将角色库 (双技能设置)
-  const AI_ROLES = [
+  // 4位可选择的学生英雄
+  const PLAYER_HEROES = [
     {
-      id: 'mom',
-      name: '妈妈',
-      avatar: '👩',
-      title: '卷王导师·培训班狂魔',
-      quote: '“都是为了你好！今天必须把这5套卷子刷完，再去上奥数班！”',
+      id: 'rebel',
+      name: '13岁叛逆少年',
+      title: '自主意识觉醒',
+      avatar: '👦',
       maxHp: 4,
-      skills: [
-        { name: '海量报班', desc: '【主动】强迫玩家打出【巧妙化解】，否则弃2张手牌或受1点伤害。' },
-        { name: '内卷提速', desc: '【被动】对玩家造成伤害时，妈妈立即摸1张牌。' }
-      ]
+      btnText: '⚡ 发动【叛逆】',
+      subText: '弃1牌造1伤/闪当杀',
+      desc: '【叛逆】弃1张牌造成1点伤害；或将【闪】当【杀】打出。\n【自主】(被动) 手牌上限为 HP+1。'
     },
     {
-      id: 'grandma_m',
-      name: '外婆',
-      avatar: '👵',
-      title: '伪科学达人·有一种冷',
-      quote: '“天冷了快把羽绒服秋裤穿上！多喝这碗偏方浓汤！”',
-      maxHp: 4,
-      skills: [
-        { name: '有一种冷', desc: '【主动】封锁玩家下回合使用【喘息复原】，并弃置玩家1张手牌。' },
-        { name: '偏方大补', desc: '【被动】回复体力时若血量已满，则转化为 1 层护盾。' }
-      ]
+      id: 'scholar',
+      name: '卷王学霸',
+      title: '标准答案掌控者',
+      avatar: '🤓',
+      maxHp: 3,
+      btnText: '📖 发动【题海冲刺】',
+      subText: '摸2牌并看穿手牌',
+      desc: '【题海冲刺】(CD 1回合) 立即摸2张牌。\n【标准答案】(被动) 打出的【表达主见】对方需2张【巧妙化解】才能防住。'
     },
     {
-      id: 'grandpa_m',
-      name: '外公',
-      avatar: '👴',
-      title: '洁癖暴食狂·肚子圆滚滚',
-      quote: '“隔夜菜不浪费继续吃！不过进门全身必须喷酒精消毒！”',
+      id: 'slacker',
+      name: '摸鱼大师',
+      title: '假装学习·极速躺平',
+      avatar: '😴',
       maxHp: 4,
-      skills: [
-        { name: '过度消毒', desc: '【主动】弃1张牌，强行摧毁玩家1件装备或1张手牌。' },
-        { name: '大腹便便', desc: '【被动】手牌上限+1；体力值≤2时受到的任何伤害-1。' }
-      ]
+      btnText: '🛡️ 发动【假装学习】',
+      subText: '获得1护盾/免疫下次伤',
+      desc: '【假装学习】(CD 1回合) 获得1点护盾。\n【极速躺平】(被动) 回合结束时若手牌≤1，自动补摸1张牌。'
     },
     {
-      id: 'grandpa_p',
-      name: '爷爷',
-      avatar: '👴🏻',
-      title: '认知洼地·短视频信徒',
-      quote: '“短视频里专家说了，吃这个能包治百病，你这孩子懂什么！”',
-      maxHp: 4,
-      skills: [
-        { name: '营销号洗脑', desc: '【主动】强制抽取玩家1张手牌，并随机交换给玩家1张手牌。' },
-        { name: '固步自封', desc: '【被动】拒绝听取规劝，免疫玩家的锦囊牌【划清界限】。' }
-      ]
-    },
-    {
-      id: 'grandma_p',
-      name: '奶奶',
-      avatar: '👵🏻',
-      title: '唠叨魔咒·情感绑架',
-      quote: '“我吃过的盐比你吃过的米还多！你这孩子怎么这么不听话呢...”',
-      maxHp: 4,
-      skills: [
-        { name: '碎碎念', desc: '【主动】强制玩家选择：弃置1张手牌，或让奶奶摸1张牌。' },
-        { name: '道德绑架', desc: '【被动】受到【表达主见】伤害时，发难使玩家弃置1张手牌。' }
-      ]
-    },
-    {
-      id: 'dad',
-      name: '爸爸',
-      avatar: '👨',
-      title: '绝对权威·固执作风',
-      quote: '“别跟我讲道理！我是你老子，我说什么就是什么！”',
-      maxHp: 4,
-      skills: [
-        { name: '威严压制', desc: '【主动】比较手牌数，若爸爸手牌多于玩家，强制造成1点压制伤害。' },
-        { name: '固执己见', desc: '【被动】家长权威不可动摇，装备无法被玩家夺走或替换。' }
-      ]
+      id: 'athlete',
+      name: '体育特长生',
+      title: '强健体魄·体能碾压',
+      avatar: '🏃',
+      maxHp: 5,
+      btnText: '💥 发动【体能爆发】',
+      subText: '扣1血造成1不可阻挡伤',
+      desc: '【体能爆发】自扣1点体力，对对方造成1点无法被闪避的伤害。\n【充沛】(被动) 拥有更高的 5 点血量上限。'
     }
   ];
 
-  // 游戏核心状态
+  // 11位电脑对手 (6长辈 + 5老师)
+  const AI_ROLES = [
+    // 长辈阵营 (6位)
+    { id: 'mom', faction: 'parent', name: '妈妈', avatar: '👩', title: '卷王导师·培训班狂魔', quote: '“都是为了你好！今天必须刷完5套卷子！”', maxHp: 4, skills: [{ name: '海量报班', desc: '【主动】强迫玩家打出【巧妙化解】，否则弃2手牌或受1伤。' }, { name: '内卷提速', desc: '【被动】造成伤害时摸1张牌。' }] },
+    { id: 'grandma_m', faction: 'parent', name: '外婆', avatar: '👵', title: '伪科学达人·有一种冷', quote: '“天冷了把秋裤套上！多喝这碗偏方浓汤！”', maxHp: 4, skills: [{ name: '有一种冷', desc: '【主动】封锁玩家下回合使用【喘息复原】，并弃玩家1牌。' }, { name: '偏方大补', desc: '【被动】回血溢出转化为护盾。' }] },
+    { id: 'grandpa_m', faction: 'parent', name: '外公', avatar: '👴', title: '洁癖暴食狂·肚子圆滚滚', quote: '“隔夜菜不浪费！进门全身喷酒精消毒！”', maxHp: 4, skills: [{ name: '过度消毒', desc: '【主动】强行摧毁玩家1件装备或1张手牌。' }, { name: '大腹便便', desc: '【被动】体力≤2时受伤害-1。' }] },
+    { id: 'grandpa_p', faction: 'parent', name: '爷爷', avatar: '👴🏻', title: '谣言洗脑·短视频信徒', quote: '“短视频里专家说了，吃这个能包治百病！”', maxHp: 4, skills: [{ name: '谣言洗脑', desc: '【主动】强制交换双方1张手牌。' }, { name: '固步自封', desc: '【被动】免疫锦囊【划清界限】。' }] },
+    { id: 'grandma_p', faction: 'parent', name: '奶奶', avatar: '👵🏻', title: '唠叨魔咒·情感绑架', quote: '“我吃的盐比你吃的米还多！你这孩子怎么不听话...”', maxHp: 4, skills: [{ name: '碎碎念', desc: '【主动】强制玩家选择弃1牌或让奶奶摸1牌。' }, { name: '道德绑架', desc: '【被动】受【表达主见】伤害时让玩家弃1牌。' }] },
+    { id: 'dad', faction: 'parent', name: '爸爸', avatar: '👨', title: '绝对权威·固执作风', quote: '“别跟我讲道理！我是你老子！”', maxHp: 4, skills: [{ name: '威严压制', desc: '【主动】若爸爸手牌较多，造成1点压制伤害。' }, { name: '固执己见', desc: '【被动】装备无法被玩家夺走或替换。' }] },
+
+    // 教师阵营 (5位新增)
+    { id: 'math_teacher', faction: 'teacher', name: '数学老师', avatar: '👨‍🏫', title: '题海战术·严谨几何', quote: '“已知这道题做不出来，今晚谁都不许放学！”', maxHp: 4, skills: [{ name: '题海战术', desc: '【主动】发起数学速算挑战！答错或超时受到1点伤害或弃2牌。' }, { name: '辅助线', desc: '【被动】攻击命中时，强行拆除玩家1件防御装备。' }] },
+    { id: 'chinese_teacher', faction: 'teacher', name: '语文老师', avatar: '👩‍🏫', title: '背诵全文·中心思想', quote: '“‘背诵全文’四个字，是你们青春里最深的噩梦！”', maxHp: 4, skills: [{ name: '背诵全文', desc: '【主动】随机抽考语文诗词答题，答错扣1血且封印下回合技能！' }, { name: '中心思想', desc: '【被动】看穿玩家手牌，弃置玩家手中牌面最大的卡牌。' }] },
+    { id: 'english_teacher', faction: 'teacher', name: '英语老师', avatar: '👩‍💼', title: '默写单词·Grammar', quote: '“Spell this word! 默写错一个单词扣10分！”', maxHp: 4, skills: [{ name: '默写单词', desc: '【主动】英语词汇量互动考核，答错受到1点伤害并弃1牌。' }, { name: 'Grammar Check', desc: '【被动】玩家打出非基本牌时，额外追加1点语法纠错压制。' }] },
+    { id: 'pe_teacher', faction: 'teacher', name: '体育老师', avatar: '🏃‍♂️', title: '体测拉满·病假占课', quote: '“今天这节体育课，数学老师有事，改上数学！”', maxHp: 5, skills: [{ name: '体测拉满', desc: '【主动】发起1000米跑拉力战，双方各弃2张牌或扣1血！' }, { name: '病假占课', desc: '【被动】血量低于3时，自动获取2层高额护盾。' }] },
+    { id: 'principal', faction: 'teacher', name: '校长', avatar: '👨‍⚖️', title: '升旗演讲·校规校纪', quote: '“我就简单讲两句！——（讲了整整两个小时）”', maxHp: 5, skills: [{ name: '升旗演讲', desc: '【主动】全场高压震慑，双方各弃1张牌，且玩家下回合无法发动主动技能。' }, { name: '校规校纪', desc: '【被动】没收玩家武器，且免疫【借题发挥】。' }] }
+  ];
+
+  // 核心状态
   let deck = [];
   let discardPile = [];
   let currentTurn = 'player'; // 'player' | 'ai'
 
+  let selectedHeroId = 'rebel';
+  let selectedAIId = 'mom';
+
   let player = {
+    heroId: 'rebel',
     hp: 4,
     maxHp: 4,
     hand: [],
     equip: { weapon: null, armor: null, treasure: null },
-    rebelUsedThisTurn: false,
-    headphonesUsedThisRound: false,
+    skillCooldown: 0,
+    skillUsedThisTurn: false,
     healBlocked: false,
-    lockedCardIndex: -1
+    silencedNextTurn: false,
+    headphonesUsedThisRound: false
   };
 
   let ai = {
@@ -931,12 +698,9 @@
     headphonesUsedThisRound: false
   };
 
-  // 悔一步（撤销）历史栈
   let stateHistory = [];
 
-  // ==========================================
-  // 快照记录与悔一步撤销功能
-  // ==========================================
+  // 快照与撤销 (悔一步)
   function saveStateSnapshot() {
     if (currentTurn !== 'player') return;
     const snapshot = {
@@ -948,7 +712,7 @@
       lastCardDisplayHTML: document.getElementById('last-card-display').innerHTML
     };
     stateHistory.push(snapshot);
-    if (stateHistory.length > 6) stateHistory.shift(); // 保留最近6步
+    if (stateHistory.length > 6) stateHistory.shift();
     updateUndoButtonState();
   }
 
@@ -965,7 +729,7 @@
     document.getElementById('battle-log').innerHTML = previous.battleLogHTML;
     document.getElementById('last-card-display').innerHTML = previous.lastCardDisplayHTML;
 
-    addLog("↺ 触发【悔一步】！成功撤销刚才的操作，恢复历史状态。", "system");
+    addLog("↺ 触发【悔一步】！时光倒流，成功恢复上一状态。", "system");
     renderAllUI();
     updateUndoButtonState();
   }
@@ -975,33 +739,33 @@
     undoBtn.disabled = (stateHistory.length === 0 || currentTurn !== 'player');
   }
 
-  // 初始化牌堆 (加入了装备牌与新锦囊)
+  // 牌堆管理
   function initDeck() {
     deck = [];
     discardPile = [];
     const composition = [
-      { type: 'STRIKE', count: 14 },
-      { type: 'DODGE', count: 10 },
-      { type: 'HEAL', count: 5 },
+      { type: 'STRIKE', count: 16 },
+      { type: 'DODGE', count: 11 },
+      { type: 'HEAL', count: 6 },
       { type: 'DRAW2', count: 4 },
       { type: 'DISCARD', count: 4 },
       { type: 'DUEL', count: 3 },
       { type: 'STEAL', count: 3 },
+      { type: 'SWAP', count: 3 },
       { type: 'EQ_WEAPON1', count: 2 },
       { type: 'EQ_WEAPON2', count: 2 },
+      { type: 'EQ_WEAPON3', count: 1 },
       { type: 'EQ_ARMOR1', count: 2 },
       { type: 'EQ_ARMOR2', count: 2 },
+      { type: 'EQ_ARMOR3', count: 2 },
       { type: 'EQ_TREASURE1', count: 2 },
       { type: 'EQ_TREASURE2', count: 2 }
     ];
 
     composition.forEach(item => {
-      for(let i = 0; i < item.count; i++) {
-        deck.push(item.type);
-      }
+      for(let i = 0; i < item.count; i++) deck.push(item.type);
     });
 
-    // 洗牌
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -1009,18 +773,14 @@
     updateDeckUI();
   }
 
-  // 摸牌逻辑
   function drawCards(target, count) {
     let drawn = [];
     for(let i = 0; i < count; i++) {
       if(deck.length === 0) {
-        if(discardPile.length === 0) {
-          addLog("⚠️ 牌堆与弃牌堆已全空！", "system");
-          break;
-        }
+        if(discardPile.length === 0) break;
         deck = [...discardPile].sort(() => Math.random() - 0.5);
         discardPile = [];
-        addLog("🔄 牌堆已用尽，将弃牌堆重新洗牌！", "system");
+        addLog("🔄 牌堆已空，将弃牌堆重新洗牌！", "system");
       }
       const card = deck.pop();
       target.hand.push(card);
@@ -1037,15 +797,14 @@
     document.getElementById('discard-count').textContent = discardPile.length;
   }
 
-  // 战报日志
   function addLog(text, type = "normal") {
     const logBox = document.getElementById('battle-log');
     const item = document.createElement('div');
 
-    let styleClasses = "py-0.5 px-1 rounded transition-all ";
-    if(type === 'player') styleClasses += "bg-sky-950/50 text-sky-200 border-l-2 border-sky-400";
-    else if(type === 'ai') styleClasses += "bg-amber-950/50 text-amber-200 border-l-2 border-amber-400";
-    else if(type === 'skill') styleClasses += "bg-purple-950/60 text-purple-200 font-bold border-l-2 border-purple-400";
+    let styleClasses = "py-0.5 px-1.5 rounded transition-all ";
+    if(type === 'player') styleClasses += "bg-sky-950/60 text-sky-200 border-l-2 border-sky-400";
+    else if(type === 'ai') styleClasses += "bg-amber-950/60 text-amber-200 border-l-2 border-amber-400";
+    else if(type === 'skill') styleClasses += "bg-purple-950/70 text-purple-200 font-bold border-l-2 border-purple-400";
     else if(type === 'equip') styleClasses += "bg-amber-950/40 text-amber-300 font-bold border-l-2 border-amber-500";
     else styleClasses += "text-slate-400 italic";
 
@@ -1055,20 +814,16 @@
     logBox.scrollTop = logBox.scrollHeight;
   }
 
-  // 回合切换 Banner
   function showTurnBanner(text) {
     const banner = document.getElementById('turn-banner');
     const bannerText = document.getElementById('turn-banner-text');
     bannerText.textContent = text;
     banner.classList.remove('hidden', 'animate-banner');
-    void banner.offsetWidth; // 触发重绘
+    void banner.offsetWidth;
     banner.classList.add('animate-banner');
-    setTimeout(() => {
-      banner.classList.add('hidden');
-    }, 1300);
+    setTimeout(() => banner.classList.add('hidden'), 1300);
   }
 
-  // 浮动伤害/治疗数值
   function showFloatingFX(targetWho, text, isHeal = false) {
     const targetEl = targetWho === 'player' ? document.getElementById('player-avatar-box') : document.getElementById('ai-avatar-box');
     if (!targetEl) return;
@@ -1083,44 +838,31 @@
     setTimeout(() => floatEl.remove(), 1100);
   }
 
-  // ==========================================
-  // 伤害计算管道与防具/技能被动响应
-  // ==========================================
+  // 伤害管线
   function applyDamageToPlayer(rawAmount, isSkillDamage = false) {
     let amount = rawAmount;
 
-    // 玩家技能【减压】：装备槽满或装备防具时，受到的技能伤害-1
-    if (isSkillDamage) {
-      const isEquipFull = player.equip.weapon && player.equip.armor && player.equip.treasure;
-      if (isEquipFull || player.equip.armor) {
-        amount = Math.max(0, amount - 1);
-        addLog("🛡️ 触发被动【减压】：装备防御就绪，受到的技能压制伤害-1！", "player");
-      }
+    // 羽绒服装备减伤
+    if (isSkillDamage && player.equip.armor === 'EQ_ARMOR3') {
+      amount = Math.max(0, amount - 1);
+      addLog("🧥 穿戴【重型羽绒服】：受到的技能压制伤害 -1！", "equip");
     }
 
     if (amount <= 0) return;
 
-    // 装备防具【头戴耳机】：每轮首次受伤/技能自动抵消1点
+    // 降噪耳机
     if (player.equip.armor === 'EQ_ARMOR1' && !player.headphonesUsedThisRound) {
       player.headphonesUsedThisRound = true;
       amount--;
       soundEngine.playShield();
-      addLog("🎧 【头戴耳机】防线防护生效！阻挡了 1 点伤害/攻击！", "equip");
-
-      const avatarBox = document.getElementById('player-avatar');
-      avatarBox.classList.add('headphone-active');
-      setTimeout(() => avatarBox.classList.remove('headphone-active'), 800);
-
-      if (amount <= 0) {
-        renderAllUI();
-        return;
-      }
+      addLog("🎧 【降噪耳机】阻挡了 1 点伤害！", "equip");
+      if (amount <= 0) { renderAllUI(); return; }
     }
 
-    // 装备防具【重型羽绒服】：50%概率完全免疫伤害
+    // 防弹作业本 (50%免疫)
     if (player.equip.armor === 'EQ_ARMOR2' && Math.random() < 0.5) {
       soundEngine.playShield();
-      addLog("🧥 穿戴【重型羽绒服】完美御寒保暖！成功免疫了本次伤害！", "equip");
+      addLog("📘 装备【防弹作业本】显威，完全挡下了攻击！", "equip");
       renderAllUI();
       return;
     }
@@ -1133,9 +875,9 @@
     appEl.classList.add('animate-shake');
     setTimeout(() => appEl.classList.remove('animate-shake'), 400);
 
-    // 妈妈被动【内卷提速】：造成伤害时摸1张牌
+    // 妈妈被动【内卷提速】
     if (ai.role && ai.role.id === 'mom') {
-      addLog("⚡ 妈妈触发被动【内卷提速】：造成伤害受到鼓舞，摸 1 张牌！", "ai");
+      addLog("⚡ 妈妈触发被动【内卷提速】：造成伤害后受到鼓舞，摸 1 张牌！", "ai");
       drawCards(ai, 1);
     }
 
@@ -1146,44 +888,50 @@
   function applyDamageToAI(rawAmount, isStrike = false) {
     let amount = rawAmount;
 
-    // 外公被动【大腹便便】：体力≤2时受到伤害-1
+    // 外公被动【大腹便便】
     if (ai.role && ai.role.id === 'grandpa_m' && ai.hp <= 2) {
       amount = Math.max(0, amount - 1);
-      addLog("🥩 外公触发被动【大腹便便】：体胖肉厚，受到伤害 -1！", "ai");
+      addLog("🥩 外公触发被动【大腹便便】：体力≤2，受到的任何伤害 -1！", "ai");
     }
 
     if (amount <= 0) return;
 
     // 护盾抵扣
-    let damageLeft = amount;
     if (ai.armor > 0) {
-      if (ai.armor >= damageLeft) {
-        ai.armor -= damageLeft;
-        damageLeft = 0;
+      if (ai.armor >= amount) {
+        ai.armor -= amount;
+        amount = 0;
         addLog(`🛡️ ${ai.role.name} 的护盾抵挡了所有伤害！`, "system");
       } else {
-        damageLeft -= ai.armor;
+        amount -= ai.armor;
         ai.armor = 0;
         addLog(`🛡️ ${ai.role.name} 的护盾被击碎！`, "system");
       }
     }
 
-    if (damageLeft > 0) {
-      ai.hp = Math.max(0, ai.hp - damageLeft);
+    if (amount > 0) {
+      ai.hp = Math.max(0, ai.hp - amount);
       soundEngine.playDamage();
-      showFloatingFX('ai', `-${damageLeft}`, false);
+      showFloatingFX('ai', `-${amount}`, false);
 
-      // 玩家武器【游戏手柄】：【表达主见】命中时额外摸1张牌
+      // 玩家武器【游戏手柄】
       if (isStrike && player.equip.weapon === 'EQ_WEAPON1') {
         soundEngine.playSkill();
-        addLog("🎮 装备【游戏手柄】命中敌人，打出连招打法，额外摸 1 张牌！", "equip");
+        addLog("🎮 装备【游戏手柄】触发连招，额外摸 1 张牌！", "equip");
         drawCards(player, 1);
       }
 
-      // 奶奶被动【道德绑架】：受到【表达主见】伤害时，玩家需弃置1张手牌
-      if (isStrike && ai.role && ai.role.id === 'grandma_p' && player.hand.length > 0) {
-        player.hand.pop();
-        addLog("👵🏻 奶奶触发被动【道德绑架】：受到了训斥发难，迫使少年弃置了 1 张手牌！", "ai");
+      // 数学老师被动【辅助线】：命中拆防御装备
+      if (isStrike && ai.role && ai.role.id === 'math_teacher' && player.equip.armor) {
+        discardPile.push(player.equip.armor);
+        player.equip.armor = null;
+        addLog("📐 数学老师触发被动【辅助线】：攻势穿透，拆除了少年的防具！", "ai");
+      }
+
+      // 体育老师被动【病假占课】
+      if (ai.role && ai.role.id === 'pe_teacher' && ai.hp < 3 && ai.armor === 0) {
+        ai.armor += 2;
+        addLog("🏃‍♂️️ 体育老师触发被动【病假占课】：体能爆发，获得 2 层高额护盾！", "ai");
       }
     }
 
@@ -1191,84 +939,114 @@
     checkBattleEnd();
   }
 
-  // 主动技能【叛逆】
-  function useRebelSkill() {
-    if(currentTurn !== 'player') return;
-    if(player.rebelUsedThisTurn) {
-      addLog("⚠️ 本回合你已经发动过【叛逆】技能了！", "system");
+  // 发动玩家英雄主动技能
+  function useHeroActiveSkill() {
+    if(currentTurn !== 'player' || player.skillUsedThisTurn) return;
+
+    if(player.silencedNextTurn) {
+      addLog("⚠️ 你正处于【校长/语文老师】的禁言封印状态，本回合无法使用技能！", "system");
       return;
     }
 
-    const dodgeIdx = player.hand.indexOf('DODGE');
-    const buttons = [];
-
-    // 选项1：弃置1张牌造1伤
-    if (player.hand.length > 0) {
-      buttons.push({
-        text: '💥 弃1张牌造成1点反击伤害',
-        class: 'bg-red-800 hover:bg-red-700 text-white text-xs py-2',
-        onClick: () => {
-          showPromptModal({
-            icon: '⚡',
-            title: '选择弃置的牌',
-            desc: '选择 1 张手牌弃置：',
-            buttons: player.hand.map((cardKey, index) => ({
-              text: CARD_DATABASE[cardKey].name,
-              class: 'bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs py-1.5',
-              onClick: () => {
-                saveStateSnapshot();
-                player.hand.splice(index, 1);
-                player.rebelUsedThisTurn = true;
-                soundEngine.playSkill();
-                addLog("⚡ 少年发动【叛逆】，弃牌强力反击，长辈深受震撼！", "player");
-                applyDamageToAI(1, false);
-                closePromptModal();
-                renderAllUI();
-              }
-            }))
-          });
-        }
-      });
+    if(player.skillCooldown > 0) {
+      addLog(`⚠️ 技能还在冷却中（还需 ${player.skillCooldown} 回合）！`, "system");
+      return;
     }
 
-    // 选项2：将【巧妙化解】当作【表达主见】打出
-    if (dodgeIdx !== -1) {
-      buttons.push({
-        text: '🗣️ 将【巧妙化解】(闪) 当作【表达主见】(杀) 打出',
-        class: 'bg-amber-700 hover:bg-amber-600 text-white text-xs py-2',
-        onClick: () => {
-          saveStateSnapshot();
-          player.hand.splice(dodgeIdx, 1);
-          player.rebelUsedThisTurn = true;
-          soundEngine.playAttack();
-          addLog("⚡ 少年发动【叛逆】：化守为攻，将【巧妙化解】当作【表达主见】打出！", "player");
-          closePromptModal();
-          executePlayerStrikeLogic();
-        }
-      });
+    const hero = PLAYER_HEROES.find(h => h.id === player.heroId);
+
+    // 1. 13岁叛逆少年
+    if(player.heroId === 'rebel') {
+      const dodgeIdx = player.hand.indexOf('DODGE');
+      const buttons = [];
+      if (player.hand.length > 0) {
+        buttons.push({
+          text: '💥 弃1张牌造成1点伤害',
+          class: 'bg-red-800 hover:bg-red-700 text-white text-xs py-2',
+          onClick: () => {
+            showPromptModal({
+              icon: '⚡',
+              title: '选择弃置的牌',
+              desc: '选择 1 张手牌弃置：',
+              buttons: player.hand.map((cardKey, index) => ({
+                text: CARD_DATABASE[cardKey].name,
+                class: 'bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs py-1.5',
+                onClick: () => {
+                  saveStateSnapshot();
+                  player.hand.splice(index, 1);
+                  player.skillUsedThisTurn = true;
+                  soundEngine.playSkill();
+                  addLog("⚡ 少年发动【叛逆】，弃牌爆发造成 1 点伤害！", "player");
+                  applyDamageToAI(1, false);
+                  closePromptModal();
+                  renderAllUI();
+                }
+              }))
+            });
+          }
+        });
+      }
+      if (dodgeIdx !== -1) {
+        buttons.push({
+          text: '🗣️ 将【巧妙化解】(闪) 当作【表达主见】(杀) 打出',
+          class: 'bg-amber-700 hover:bg-amber-600 text-white text-xs py-2',
+          onClick: () => {
+            saveStateSnapshot();
+            player.hand.splice(dodgeIdx, 1);
+            player.skillUsedThisTurn = true;
+            soundEngine.playAttack();
+            addLog("⚡ 少年发动【叛逆】：将【巧妙化解】当作【表达主见】打出！", "player");
+            closePromptModal();
+            executePlayerStrikeLogic();
+          }
+        });
+      }
+      buttons.push({ text: '取消', class: 'bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-1.5', onClick: closePromptModal });
+      showPromptModal({ icon: '⚡', title: '发动【叛逆】技能', desc: '请选择叛逆反抗方式：', buttons });
     }
-
-    buttons.push({
-      text: '取消',
-      class: 'bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-1.5',
-      onClick: () => closePromptModal()
-    });
-
-    showPromptModal({
-      icon: '⚡',
-      title: '发动主动技能【叛逆】',
-      desc: '每回合限一次，请选择叛逆反抗方式：',
-      buttons: buttons
-    });
+    // 2. 卷王学霸
+    else if(player.heroId === 'scholar') {
+      saveStateSnapshot();
+      player.skillUsedThisTurn = true;
+      player.skillCooldown = 1;
+      soundEngine.playSkill();
+      addLog("📖 卷王学霸发动【题海冲刺】：额外摸 2 张牌，并看穿对手手牌！", "player");
+      drawCards(player, 2);
+      const aiHandNames = ai.hand.map(k => CARD_DATABASE[k].name).join(', ') || '无手牌';
+      addLog(`🔍 【标准答案看穿】：对手当前手牌为 [ ${aiHandNames} ]`, "player");
+      renderAllUI();
+    }
+    // 3. 摸鱼大师
+    else if(player.heroId === 'slacker') {
+      saveStateSnapshot();
+      player.skillUsedThisTurn = true;
+      player.skillCooldown = 1;
+      ai.armor += 1; // 给予自身防御护盾
+      soundEngine.playShield();
+      addLog("🛡️ 摸鱼大师发动【假装学习】：挂起防守姿态，获得 1 点护盾！", "player");
+      renderAllUI();
+    }
+    // 4. 体育特长生
+    else if(player.heroId === 'athlete') {
+      if(player.hp <= 1) {
+        addLog("⚠️ 体力不足（只有1点血），无法使用【体能爆发】！", "system");
+        return;
+      }
+      saveStateSnapshot();
+      player.hp--;
+      player.skillUsedThisTurn = true;
+      soundEngine.playAttack();
+      addLog("🏃 体育特长生发动【体能爆发】：消耗 1 点体力，对对手造成 1 点不可阻挡的伤害！", "player");
+      applyDamageToAI(1, false);
+      renderAllUI();
+    }
   }
 
-  // 执行【表达主见】结算逻辑 (考量错题集等武器)
+  // 结算表达主见 (杀)
   function executePlayerStrikeLogic() {
-    let requiredDodges = 1;
-    // 武器【错题集】：对方需要2张【巧妙化解】
-    if (player.equip.weapon === 'EQ_WEAPON2') {
-      requiredDodges = 2;
-      addLog("📖 装备【错题集】压制：对方必须打出 2 张【巧妙化解】才能抵消！", "equip");
+    let requiredDodges = (player.heroId === 'scholar' || player.equip.weapon === 'EQ_WEAPON2') ? 2 : 1;
+    if(requiredDodges === 2) {
+      addLog("📖 压制攻击：对方需要 2 张【巧妙化解】才能防住！", "player");
     }
 
     let aiDodgeCount = 0;
@@ -1283,7 +1061,7 @@
 
     if (aiDodgeCount >= requiredDodges) {
       soundEngine.playShield();
-      addLog(`👵/👴/👨 ${ai.role.name} 打出了 ${aiDodgeCount} 张【巧妙化解】，化解了你的主见！`, "ai");
+      addLog(`🛡️ ${ai.role.name} 打出了 ${aiDodgeCount} 张【巧妙化解】，成功防住！`, "ai");
     } else {
       addLog(`💥 ${ai.role.name} 未能完全化解，受到 1 点表达主见伤害！`, "player");
       applyDamageToAI(1, true);
@@ -1295,47 +1073,55 @@
   function playCardFromHand(index) {
     if(currentTurn !== 'player') return;
 
-    if(index === player.lockedCardIndex) {
-      addLog("🔒 该卡牌正被爷爷的【营销号洗脑】封锁中，本回合无法打出！", "system");
-      return;
-    }
-
     const cardKey = player.hand[index];
     const cardData = CARD_DATABASE[cardKey];
 
     if(cardData.type === 'BASIC' && cardKey === 'DODGE') {
-      addLog("🛡️ 【巧妙化解】是防御牌，只能在响应说教时使用（或通过【叛逆】技能转化为杀）。", "system");
+      addLog("🛡️ 【巧妙化解】是防御牌，只能在响应攻击或说教时使用。", "system");
       return;
     }
 
     if(cardKey === 'HEAL' && player.healBlocked) {
-      addLog("🧥 受到外婆【有一种冷】影响被套了厚秋裤，本回合无法使用【喘息复原】！", "system");
+      addLog("🧥 受到【有一种冷】约束套着厚秋裤，本回合无法使用【喘息复原】！", "system");
       return;
     }
 
-    saveStateSnapshot(); // 记录撤销点
+    saveStateSnapshot();
 
-    // 穿戴装备牌
+    // 英语老师 Grammar Check 被动
+    if(cardData.type !== 'BASIC' && ai.role && ai.role.id === 'english_teacher') {
+      addLog("👩‍💼 英语老师触发【Grammar Check】：打出非基本牌，追加语法扣分压制！", "ai");
+      applyDamageToPlayer(1, true);
+    }
+
+    // 装备牌
     if(cardData.type === 'EQUIP') {
+      // 校长【校规校纪】没收武器
+      if(cardData.slot === 'weapon' && ai.role && ai.role.id === 'principal') {
+        addLog("👨‍⚖️ 校长触发被动【校规校纪】：违禁物品！没收少年的武器装备！", "ai");
+        player.hand.splice(index, 1);
+        discardPile.push(cardKey);
+        renderAllUI();
+        return;
+      }
+
       player.hand.splice(index, 1);
       const slot = cardData.slot;
-      if(player.equip[slot]) {
-        discardPile.push(player.equip[slot]); // 替换旧装备放入弃牌堆
-      }
+      if(player.equip[slot]) discardPile.push(player.equip[slot]);
       player.equip[slot] = cardKey;
       soundEngine.playEquip();
-      addLog(`🛡️ 少年穿戴了【${cardData.name}】(${cardData.tag})！`, "equip");
+      addLog(`🛡️ 少年穿戴了装备【${cardData.name}】(${cardData.tag})！`, "equip");
       animateCardPlay(cardData);
       renderAllUI();
       return;
     }
 
-    // 基础牌 / 锦囊牌
+    // 基础 / 锦囊
     player.hand.splice(index, 1);
     discardPile.push(cardKey);
     animateCardPlay(cardData);
 
-    addLog(`👦 少年打出了【${cardData.name}】！`, "player");
+    addLog(`👦 打出了【${cardData.name}】！`, "player");
 
     if(cardKey === 'STRIKE') {
       soundEngine.playAttack();
@@ -1345,56 +1131,52 @@
       if(player.hp < player.maxHp) {
         player.hp++;
         showFloatingFX('player', '+1', true);
-        addLog("🏸 少年适度羽毛球/吃零食恢复，恢复了 1 点体力！", "player");
-      } else {
-        addLog("🥤 体力已满，少年喝了口水放松心情。", "player");
+        addLog("🏸 少年适度放松休息，恢复了 1 点体力！", "player");
       }
     } else if(cardKey === 'DRAW2') {
       soundEngine.playSkill();
-      addLog("💡 少年打出【独立思考】，理清思维逻辑，额外摸 2 张牌！", "player");
+      addLog("💡 少年打出【独立思考】，理清逻辑思路，额外摸 2 张牌！", "player");
       drawCards(player, 2);
     } else if(cardKey === 'DISCARD') {
       soundEngine.playSkill();
-      // 爷爷被动【固步自封】：免疫【划清界限】
       if(ai.role.id === 'grandpa_p') {
         addLog("👴🏻 爷爷触发被动【固步自封】：油盐不进，免疫少年的【划清界限】！", "ai");
       } else {
         if(ai.hand.length > 0) {
           const randIdx = Math.floor(Math.random() * ai.hand.length);
           ai.hand.splice(randIdx, 1);
-          addLog(`✂️ 少年打出【划清界限】，弃置了 ${ai.role.name} 的 1 张手牌！`, "player");
-        } else {
-          addLog(`✂️ ${ai.role.name} 已经没有任何手牌可被弃置了。`, "system");
+          addLog(`✂️ 少年打出【划清界限】，弃置了 ${ai.role.name} 1 张手牌！`, "player");
         }
       }
     } else if(cardKey === 'STEAL') {
       soundEngine.playSkill();
-      // 爸爸被动【固执己见】：装备不可被夺走，但可拿手牌
-      let stolen = false;
-      if(ai.role.id === 'dad') {
-        addLog("👨 爸爸触发被动【固执己见】：装备权威不可动摇！只能对其手牌尝试顺走。", "ai");
-      }
-      if(ai.hand.length > 0) {
+      if(ai.role.id === 'principal' || ai.role.id === 'dad') {
+        addLog(`🛡️ ${ai.role.name} 的权威不可动摇，免疫【借题发挥】！`, "ai");
+      } else if(ai.hand.length > 0) {
         const randIdx = Math.floor(Math.random() * ai.hand.length);
         const card = ai.hand.splice(randIdx, 1)[0];
         player.hand.push(card);
-        stolen = true;
-        addLog(`🎯 少年打出【借题发挥】，从 ${ai.role.name} 手中顺走了 1 张卡牌！`, "player");
-      }
-      if(!stolen) {
-        addLog(`🎯 ${ai.role.name} 没有任何可被借题发挥顺走的牌。`, "system");
+        addLog(`🎯 少年打出【借题发挥】，从 ${ai.role.name} 手中顺走 1 张卡牌！`, "player");
       }
     } else if(cardKey === 'DUEL') {
       soundEngine.playSkill();
-      addLog(`⚖️ 少年发起了【据理力争】，与 ${ai.role.name} 展开逻辑大辩论！`, "player");
+      addLog(`⚖️ 少年发起【据理力争】，与 ${ai.role.name} 展开辩论！`, "player");
       resolveDuelPhase('ai');
+    } else if(cardKey === 'SWAP') {
+      soundEngine.playSkill();
+      addLog(`🔄 少年打出【换位思考】，迫使 ${ai.role.name} 做出选择！`, "player");
+      if(ai.hand.length >= 2) {
+        ai.hand.pop(); ai.hand.pop();
+        addLog(`🔄 ${ai.role.name} 选择弃置 2 张手牌妥协！`, "ai");
+      } else {
+        applyDamageToAI(1, false);
+      }
     }
 
     renderAllUI();
     checkBattleEnd();
   }
 
-  // 中央打牌飞入动画
   function animateCardPlay(cardData) {
     const cardBox = document.getElementById('last-card-box');
     cardBox.innerHTML = `
@@ -1404,7 +1186,6 @@
     `;
   }
 
-  // 据理力争 决斗结算
   function resolveDuelPhase(nextTurnWho) {
     if(nextTurnWho === 'ai') {
       const strikeIdx = ai.hand.indexOf('STRIKE');
@@ -1415,7 +1196,7 @@
         addLog(`💬 ${ai.role.name} 打出【表达主见】，据理力争！`, "ai");
         setTimeout(() => resolveDuelPhase('player'), 600);
       } else {
-        addLog(`💥 ${ai.role.name} 在逻辑辩论中语塞，受到 1 点伤害！`, "player");
+        addLog(`💥 ${ai.role.name} 在辩论中语塞，受到 1 点伤害！`, "player");
         applyDamageToAI(1, false);
       }
     } else {
@@ -1424,7 +1205,7 @@
         showPromptModal({
           icon: '⚖️',
           title: '据理力争辩论中',
-          desc: '对方打出了【表达主见】，是否打出【表达主见】进行反驳？',
+          desc: '对方打出了【表达主见】，是否打出【表达主见】反驳？',
           buttons: [
             {
               text: '打出【表达主见】',
@@ -1442,7 +1223,7 @@
               text: '放弃辩论 (受1伤)',
               class: 'bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-2',
               onClick: () => {
-                addLog('💥 少年放弃辩论，受到 1 点压制伤害！', 'ai');
+                addLog('💥 少年放弃辩论，受到 1 点伤害！', 'ai');
                 applyDamageToPlayer(1, false);
                 closePromptModal();
               }
@@ -1456,24 +1237,27 @@
     }
   }
 
-  // 开始玩家回合
+  // 回合管理
   function startPlayerTurn() {
     currentTurn = 'player';
-    player.rebelUsedThisTurn = false;
+    player.skillUsedThisTurn = false;
     player.healBlocked = false;
-    player.lockedCardIndex = -1;
     player.headphonesUsedThisRound = false;
     ai.headphonesUsedThisRound = false;
-    stateHistory = []; // 清空上轮撤销栈
+
+    if(player.skillCooldown > 0) player.skillCooldown--;
+    if(player.silencedNextTurn) player.silencedNextTurn = false;
+
+    stateHistory = [];
 
     showTurnBanner('👦 你的回合开始！');
     addLog("=== 👦 你的回合开始 ===", "system");
 
-    // 装备宝物【压岁钱存折】：摸牌阶段多摸1张
+    // 压岁钱存折
     let drawCount = 2;
     if (player.equip.treasure === 'EQ_TREASURE1') {
       drawCount = 3;
-      addLog("🧧 装备【压岁钱存折】生效：经济独立，摸牌阶段多摸 1 张牌！", "equip");
+      addLog("🧧 装备【压岁钱存折】生效：摸牌阶段多摸 1 张牌！", "equip");
     }
     drawCards(player, drawCount);
 
@@ -1481,203 +1265,191 @@
     updateUndoButtonState();
   }
 
-  // 结束玩家回合
   function endPlayerTurn() {
     if(currentTurn !== 'player') return;
 
-    // 装备宝物【筋膜理疗仪】：若手牌小于上限，50%概率恢复1点体力
-    const maxHand = player.hp + 1; // 少年锁定技【自主】：手牌上限 = 当前体力 + 1
-    if (player.equip.treasure === 'EQ_TREASURE2' && player.hand.length < maxHand && player.hp < player.maxHp) {
-      if (Math.random() < 0.5) {
+    // 保温杯宝物
+    if (player.equip.treasure === 'EQ_TREASURE2' && player.hand.length <= 1) {
+      if (player.hp < player.maxHp) {
         player.hp++;
         showFloatingFX('player', '+1', true);
         soundEngine.playHeal();
-        addLog("⚡ 装备【筋膜理疗仪】按摩复原：触发疗愈，恢复 1 点体力！", "equip");
+        addLog("🍵 装备【保温杯】养生复原：手牌≤1，回复 1 点体力！", "equip");
       }
     }
 
-    // 弃牌阶段：手牌上限 = 当前体力值 + 1
+    // 摸鱼大师被动【极速躺平】
+    if (player.heroId === 'slacker' && player.hand.length <= 1) {
+      drawCards(player, 1);
+      addLog("😴 摸鱼大师触发被动【极速躺平】：手牌≤1，自动补摸 1 张牌！", "player");
+    }
+
+    // 手牌上限计算 (13岁叛逆少年 HP+1)
+    const maxHand = (player.heroId === 'rebel') ? (player.hp + 1) : player.hp;
     if(player.hand.length > maxHand) {
       const needDiscard = player.hand.length - maxHand;
-      addLog(`📦 触发锁定技【自主】（手牌上限=当前体力+1=${maxHand}），弃置 ${needDiscard} 张多余手牌。`, "system");
+      addLog(`📦 触发手牌上限限制（上限=${maxHand}），弃置 ${needDiscard} 张手牌。`, "system");
       for(let i = 0; i < needDiscard; i++) {
-        const drop = player.hand.pop();
-        discardPile.push(drop);
+        discardPile.push(player.hand.pop());
       }
     }
 
     renderAllUI();
     currentTurn = 'ai';
-    showTurnBanner(`👵/👴/👨 ${ai.role.name} 的回合！`);
-    setTimeout(executeAITurn, 1200);
+    showTurnBanner(`👵/👨‍🏫 ${ai.role.name} 的回合！`);
+    setTimeout(executeAITurn, 1100);
   }
 
-  // ==========================================
-  // 执行 AI 回合与长辈特色双技能
-  // ==========================================
+  // AI 回合与技能
   function executeAITurn() {
-    addLog(`=== 👵/👴/👨 ${ai.role.name} 的回合开始 ===`, "system");
+    addLog(`=== 👵/👨‍🏫 ${ai.role.name} 的回合开始 ===`, "system");
 
-    // 长辈摸牌
     let drawCount = 2;
     if (ai.equip.treasure === 'EQ_TREASURE1') drawCount = 3;
     drawCards(ai, drawCount);
 
-    // AI 触发专属技能与逻辑
-    executeElderSkills();
+    // AI 独有技能爆发
+    executeAIElderAndTeacherSkills();
 
-    // AI 出牌阶段
     setTimeout(() => {
       aiPlayPhase();
     }, 1000);
   }
 
-  function executeElderSkills() {
+  function executeAIElderAndTeacherSkills() {
     const rId = ai.role.id;
 
-    // 1. 妈妈：海量报班 (主动)
-    if(rId === 'mom') {
+    // 数学老师【题海战术】
+    if(rId === 'math_teacher') {
       soundEngine.playSkill();
-      addLog(`📚 妈妈甩出5套卷子与奥数班通知：发动【海量报班】！`, "skill");
-      const dodgeIdx = player.hand.indexOf('DODGE');
-      if(dodgeIdx !== -1) {
-        showPromptModal({
-          icon: '📚',
-          title: '海量报班轰炸！',
-          desc: '妈妈逼你立刻去上奥数培训班！请选择应对方案：',
-          buttons: [
-            {
-              text: '打出【巧妙化解】',
-              class: 'bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-2',
-              onClick: () => {
-                player.hand.splice(dodgeIdx, 1);
-                discardPile.push('DODGE');
-                soundEngine.playShield();
-                addLog('🛡️ 少年打出【巧妙化解】，顶住了报班压力！', 'player');
-                closePromptModal();
-              }
-            },
-            {
-              text: '弃置 2 张手牌',
-              class: 'bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs py-2',
-              onClick: () => {
-                for(let k=0; k<2; k++) { if(player.hand.length > 0) player.hand.pop(); }
-                addLog('📚 少年被迫弃置了 2 张手牌妥协...', 'ai');
-                closePromptModal();
-              }
-            },
-            {
-              text: '承受压制 (受1伤害)',
-              class: 'bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-2',
-              onClick: () => {
-                addLog('💥 少年承受不住报班压迫感，受到 1 点技能伤害！', 'ai');
-                applyDamageToPlayer(1, true);
-                closePromptModal();
-              }
+      addLog("📐 数学老师敲响黑板：发动【题海战术】发起数学速算考核！", "skill");
+      const a = Math.floor(Math.random() * 8) + 2;
+      const b = Math.floor(Math.random() * 8) + 2;
+      const ans = a * b;
+      const options = [ans, ans + 2, ans - 3].sort(() => Math.random() - 0.5);
+
+      showPromptModal({
+        icon: '📐',
+        title: '数学老师【题海战术】速算答题！',
+        desc: `请在限时内计算：${a} × ${b} = ？`,
+        buttons: options.map(opt => ({
+          text: `答案：${opt}`,
+          class: 'bg-blue-800 hover:bg-blue-700 text-white text-xs py-2',
+          onClick: () => {
+            if(opt === ans) {
+              soundEngine.playShield();
+              addLog("🎉 回答正确！成功破解了数学老师的题海阵！", "player");
+            } else {
+              addLog("❌ 回答错误！受到了数学老师 1 点题海压制伤害！", "ai");
+              applyDamageToPlayer(1, true);
             }
-          ]
-        });
+            closePromptModal();
+          }
+        }))
+      });
+    }
+    // 语文老师【背诵全文】
+    else if(rId === 'chinese_teacher') {
+      soundEngine.playSkill();
+      addLog("📖 语文老师翻开课本：发动【背诵全文】检查诗词古文！", "skill");
+      showPromptModal({
+        icon: '📖',
+        title: '语文老师【背诵全文】抽考！',
+        desc: '‘少壮不努力’的下一句是？',
+        buttons: [
+          {
+            text: 'A. 老大徒伤悲',
+            class: 'bg-emerald-800 hover:bg-emerald-700 text-white text-xs py-2',
+            onClick: () => {
+              addLog("🎉 朗朗上口，背诵完全正确！", "player");
+              closePromptModal();
+            }
+          },
+          {
+            text: 'B. 老大去抽卡',
+            class: 'bg-amber-800 hover:bg-amber-700 text-white text-xs py-2',
+            onClick: () => {
+              addLog("❌ 背错诗词！受到了 1 点压制伤害，且下回合被禁言！", "ai");
+              player.silencedNextTurn = true;
+              applyDamageToPlayer(1, true);
+              closePromptModal();
+            }
+          }
+        ]
+      });
+    }
+    // 英语老师【默写单词】
+    else if(rId === 'english_teacher') {
+      soundEngine.playSkill();
+      addLog("👩‍💼 英语老师拿出一叠默写纸：发动【默写单词】！", "skill");
+      showPromptModal({
+        icon: '👩‍💼',
+        title: '英语老师【默写单词】抽查！',
+        desc: '以下哪个单词表示‘作业’？',
+        buttons: [
+          {
+            text: 'A. Homework',
+            class: 'bg-sky-800 hover:bg-sky-700 text-white text-xs py-2',
+            onClick: () => {
+              addLog("🎉 拼写正确，通过默写测试！", "player");
+              closePromptModal();
+            }
+          },
+          {
+            text: 'B. Homeworking',
+            class: 'bg-purple-800 hover:bg-purple-700 text-white text-xs py-2',
+            onClick: () => {
+              addLog("❌ 默写错误！受到 1 点伤害并被没收 1 张手牌！", "ai");
+              if(player.hand.length > 0) player.hand.pop();
+              applyDamageToPlayer(1, true);
+              closePromptModal();
+            }
+          }
+        ]
+      });
+    }
+    // 体育老师【体测拉满】
+    else if(rId === 'pe_teacher') {
+      soundEngine.playSkill();
+      addLog("🏃‍♂️ 体育老师吹响哨子：发动【体测拉满】1000米长跑！", "skill");
+      if(player.hand.length >= 2) {
+        player.hand.pop(); player.hand.pop();
+        addLog("🏃‍♂️ 少年气喘吁吁，体力消耗弃置了 2 张手牌！", "ai");
       } else {
-        addLog('💥 少年没有【巧妙化解】，受到 1 点技能压制伤害并被迫弃牌！', 'ai');
-        if(player.hand.length > 0) player.hand.pop();
         applyDamageToPlayer(1, true);
       }
     }
-    // 2. 外婆：有一种冷 (主动)
-    else if(rId === 'grandma_m') {
+    // 校长【升旗演讲】
+    else if(rId === 'principal') {
       soundEngine.playSkill();
-      addLog(`🧥 外婆强行拿羽绒服秋裤套你：发动【有一种冷】！`, "skill");
-      player.healBlocked = true;
+      addLog("👨‍⚖️ 校长站上讲台：发动【升旗演讲】全场高压震慑！", "skill");
+      player.silencedNextTurn = true;
       if(player.hand.length > 0) player.hand.pop();
-      addLog('🧥 少年被套上了厚秋裤！下回合无法使用【喘息复原】，且被弃置1张手牌！', 'ai');
+      addLog("👨‍⚖️ 校长连续演讲两个小时！少年被震撼弃置 1 张手牌，且下回合技能被封印！", "ai");
     }
-    // 3. 外公：过度消毒 (主动)
-    else if(rId === 'grandpa_m') {
+    // 妈妈【海量报班】
+    else if(rId === 'mom') {
       soundEngine.playSkill();
-      addLog(`🧴 外公拿酒精喷雾全屋喷洒：‘外面全是细菌！’发动【过度消毒】！`, "skill");
-      let destroyed = false;
-      // 优先破坏玩家的防具或武器
-      if(player.equip.armor) {
-        discardPile.push(player.equip.armor);
-        player.equip.armor = null;
-        destroyed = true;
-        addLog('🧴 外公全屋狂喷酒精，摧毁了少年的防具！', 'ai');
-      } else if(player.equip.weapon) {
-        discardPile.push(player.equip.weapon);
-        player.equip.weapon = null;
-        destroyed = true;
-        addLog('🧴 外公全屋狂喷酒精，摧毁了少年的武器！', 'ai');
-      } else if(player.hand.length > 0) {
-        player.hand.pop();
-        destroyed = true;
-        addLog('🧴 外公强行酒精喷洒消毒，摧毁了少年 1 张手牌！', 'ai');
-      }
-    }
-    // 4. 爷爷：营销号洗脑 (主动)
-    else if(rId === 'grandpa_p') {
-      soundEngine.playSkill();
-      addLog(`📱 爷爷在家族群转发短视频营销号文章：发动【营销号洗脑】！`, "skill");
-      if(player.hand.length > 0) {
-        const stolenCard = player.hand.pop();
-        ai.hand.push(stolenCard);
-        if(ai.hand.length > 1) {
-          const giveCard = ai.hand.shift();
-          player.hand.push(giveCard);
-          addLog('📱 爷爷强行抽取少年的 1 张手牌，并交换给了少年 1 张牌！', 'ai');
-        }
-      }
-    }
-    // 5. 奶奶：碎碎念 (主动)
-    else if(rId === 'grandma_p') {
-      soundEngine.playSkill();
-      addLog(`👵🏻 奶奶开启碎碎念模式：‘我吃的盐比你吃的米还多！’发动【碎碎念】！`, "skill");
-      if(player.hand.length > 0) {
-        showPromptModal({
-          icon: '👵🏻',
-          title: '奶奶开启碎碎念模式！',
-          desc: '‘我吃过的盐比你吃过的米还多！’请做出回应方案：',
-          buttons: [
-            {
-              text: '忍痛弃置 1 张手牌',
-              class: 'bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs py-2',
-              onClick: () => {
-                player.hand.pop();
-                addLog('🤯 少年忍受不了唠叨，弃置了 1 张手牌。', 'player');
-                closePromptModal();
-              }
-            },
-            {
-              text: '让奶奶多摸 1 张牌',
-              class: 'bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-2',
-              onClick: () => {
-                drawCards(ai, 1);
-                addLog('👵🏻 奶奶得到了回应，心情愉悦额外摸了 1 张牌。', 'ai');
-                closePromptModal();
-              }
-            }
-          ]
-        });
+      addLog("📚 妈妈甩出报班通知：发动【海量报班】！", "skill");
+      if(player.hand.length >= 2) {
+        player.hand.pop(); player.hand.pop();
+        addLog("📚 少年迫于压力弃置了 2 张手牌...", "ai");
       } else {
-        drawCards(ai, 1);
-        addLog('👵🏻 少年无牌可弃，奶奶碎碎念后额外摸了 1 张牌。', 'ai');
-      }
-    }
-    // 6. 爸爸：威严压制 (主动)
-    else if(rId === 'dad') {
-      soundEngine.playSkill();
-      addLog(`👨 爸爸拍桌子拉长脸：‘我是你老子！’发动【威严压制】！`, "skill");
-      if(ai.hand.length > player.hand.length) {
-        addLog('👨 爸爸手牌数量多于少年，权威压制成功！强制造成 1 点技能伤害！', 'ai');
         applyDamageToPlayer(1, true);
-      } else {
-        addLog('👦 少年手牌充沛底气十足，顶住了爸爸的权威压制！', 'player');
+      }
+    }
+    // 爸爸【威严压制】
+    else if(rId === 'dad') {
+      if(ai.hand.length > player.hand.length) {
+        soundEngine.playSkill();
+        addLog("👨 爸爸权威压制：手牌数量多于少年，造成 1 点技能伤害！", "ai");
+        applyDamageToPlayer(1, true);
       }
     }
 
     renderAllUI();
   }
 
-  // AI 出牌引擎
   function aiPlayPhase() {
     if(ai.hp <= 0) return;
 
@@ -1688,7 +1460,7 @@
       guardCounter++;
       played = false;
 
-      // 穿戴装备
+      // 穿装备
       for (let i = ai.hand.length - 1; i >= 0; i--) {
         const cKey = ai.hand[i];
         if (CARD_DATABASE[cKey].type === 'EQUIP') {
@@ -1697,69 +1469,64 @@
             ai.hand.splice(i, 1);
             ai.equip[slot] = cKey;
             soundEngine.playEquip();
-            addLog(`👵/👴/👨 ${ai.role.name} 穿戴了装备【${CARD_DATABASE[cKey].name}】！`, "equip");
+            addLog(`👵/👨‍🏫 ${ai.role.name} 穿戴了【${CARD_DATABASE[cKey].name}】！`, "equip");
             played = true;
             break;
           }
         }
       }
 
-      // 回血牌
+      // 回血
       const healIdx = ai.hand.indexOf('HEAL');
       if(healIdx !== -1 && ai.hp < ai.maxHp) {
         ai.hand.splice(healIdx, 1);
-        // 外婆被动【偏方大补】：回血过满转护盾
         if(ai.role.id === 'grandma_m' && ai.hp >= ai.maxHp) {
           ai.armor++;
-          addLog("👵 外婆触发被动【偏方大补】：喝大补汤血量溢出，转化为 1 层护盾！", "ai");
+          addLog("👵 外婆触发【偏方大补】：回血溢出转为 1 层护盾！", "ai");
         } else {
           ai.hp++;
           showFloatingFX('ai', '+1', true);
           soundEngine.playHeal();
-          addLog(`👵/👴/👨 ${ai.role.name} 打出【喘息复原】，恢复了 1 点体力！`, "ai");
+          addLog(`👵/👨‍🏫 ${ai.role.name} 打出【喘息复原】，恢复 1 点体力！`, "ai");
         }
         played = true;
         continue;
       }
 
-      // 表达主见 (杀)
+      // 出杀
       const strikeIdx = ai.hand.indexOf('STRIKE');
       if(strikeIdx !== -1) {
         ai.hand.splice(strikeIdx, 1);
         discardPile.push('STRIKE');
         soundEngine.playAttack();
-        addLog(`🗣️ ${ai.role.name} 打出【表达主见】展开严厉训斥！`, "ai");
+        addLog(`🗣️ ${ai.role.name} 打出【表达主见】展开训斥！`, "ai");
 
         const dodgeIdx = player.hand.indexOf('DODGE');
         if(dodgeIdx !== -1) {
           player.hand.splice(dodgeIdx, 1);
           discardPile.push('DODGE');
           soundEngine.playShield();
-          addLog("🛡️ 少年迅速打出【巧妙化解】，化解了训斥！", "player");
+          addLog("🛡️ 少年打出【巧妙化解】，化解了训斥！", "player");
         } else {
-          addLog("💥 少年未能化解，受到了 1 点压制伤害！", "ai");
+          addLog("💥 少年未能化解，受到了 1 点伤害！", "ai");
           applyDamageToPlayer(1, false);
         }
         played = true;
         continue;
       }
 
-      // 摸牌锦囊
+      // 摸牌
       const draw2Idx = ai.hand.indexOf('DRAW2');
       if(draw2Idx !== -1) {
         ai.hand.splice(draw2Idx, 1);
         drawCards(ai, 2);
-        addLog(`💡 ${ai.role.name} 打出【独立思考】（总结管教经验），额外摸了2张牌！`, "ai");
+        addLog(`💡 ${ai.role.name} 打出【独立思考】，额外摸 2 张牌！`, "ai");
         played = true;
         continue;
       }
     }
 
-    // AI 弃牌阶段 (外公被动【大腹便便】手牌上限+1)
-    let maxAiHand = ai.hp;
-    if(ai.role.id === 'grandpa_m') maxAiHand += 1;
-
-    while(ai.hand.length > maxAiHand) {
+    while(ai.hand.length > ai.hp) {
       ai.hand.pop();
     }
 
@@ -1770,14 +1537,11 @@
     }
   }
 
-  // ==========================================
-  // UI 渲染与状态更新
-  // ==========================================
+  // UI 渲染
   function renderAllUI() {
     renderHpIcons('player-hp-container', player.hp, player.maxHp);
     renderHpIcons('ai-hp-container', ai.hp, ai.maxHp);
 
-    // 护盾与手牌数
     const armorBadge = document.getElementById('ai-armor-badge');
     if(ai.armor > 0) {
       armorBadge.classList.remove('hidden');
@@ -1788,28 +1552,22 @@
 
     document.getElementById('ai-card-count').textContent = ai.hand.length;
 
-    // 渲染装备槽
     renderEquipments('player-eq', player.equip);
     renderEquipments('ai-eq', ai.equip);
 
-    // 负面状态提示
-    document.getElementById('debuff-tag-cold').style.display = player.healBlocked ? 'inline-block' : 'none';
-    document.getElementById('debuff-tag-lock').style.display = (player.lockedCardIndex !== -1) ? 'inline-block' : 'none';
+    document.getElementById('debuff-tag-cold').style.display = (player.healBlocked || player.silencedNextTurn) ? 'inline-block' : 'none';
 
-    document.getElementById('btn-rebel').disabled = (currentTurn !== 'player' || player.rebelUsedThisTurn || player.hand.length === 0);
+    document.getElementById('btn-hero-skill').disabled = (currentTurn !== 'player' || player.skillUsedThisTurn || player.silencedNextTurn || player.skillCooldown > 0);
     document.getElementById('btn-end-turn').disabled = (currentTurn !== 'player');
     updateUndoButtonState();
 
-    // 渲染玩家手牌
     const handBox = document.getElementById('player-hand');
     handBox.innerHTML = '';
 
     player.hand.forEach((cardKey, index) => {
       const card = CARD_DATABASE[cardKey];
       const cardEl = document.createElement('div');
-      const isLocked = (index === player.lockedCardIndex);
-
-      cardEl.className = `card-item cursor-pointer flex-shrink-0 w-24 md:w-28 h-32 md:h-36 rounded-2xl p-2 bg-gradient-to-b ${card.color} border shadow-lg flex flex-col justify-between select-none relative overflow-hidden ${isLocked ? 'opacity-40 grayscale border-purple-500' : ''}`;
+      cardEl.className = `card-item cursor-pointer flex-shrink-0 w-24 md:w-28 h-32 md:h-36 rounded-2xl p-2 bg-gradient-to-b ${card.color} border shadow-lg flex flex-col justify-between select-none relative overflow-hidden`;
       cardEl.onclick = () => playCardFromHand(index);
 
       cardEl.innerHTML = `
@@ -1819,7 +1577,7 @@
         </div>
         <div class="text-center font-black text-xs my-0.5">${card.name}</div>
         <div class="text-[8px] md:text-[9px] text-slate-300 leading-tight text-center line-clamp-3">${card.desc}</div>
-        <div class="text-[7px] text-slate-500 text-right mt-0.5 font-mono">13岁逆袭</div>
+        <div class="text-[7px] text-slate-500 text-right mt-0.5 font-mono">初一逆袭</div>
       `;
       handBox.appendChild(cardEl);
     });
@@ -1836,7 +1594,7 @@
       const cardKey = equipObj[slot];
       if (cardKey) {
         const card = CARD_DATABASE[cardKey];
-        el.className = 'equip-slot filled rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-amber-300 min-w-[90px] font-bold cursor-pointer';
+        el.className = 'equip-slot filled rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-amber-300 min-w-[90px] font-bold';
         el.innerHTML = `<span>${card.icon}</span><span class="slot-name">${card.name}</span>`;
       } else {
         el.className = 'equip-slot rounded-xl px-2 py-1 text-[10px] flex items-center gap-1 text-slate-500 min-w-[90px]';
@@ -1856,7 +1614,6 @@
     }
   }
 
-  // 弹窗管理
   function showPromptModal({ icon, title, desc, buttons }) {
     document.getElementById('prompt-icon').textContent = icon;
     document.getElementById('prompt-title').textContent = title;
@@ -1887,7 +1644,7 @@
         win: false,
         icon: '💔',
         title: '少年被彻底压制了...',
-        message: `在 ${ai.role.name} 的高压与说教下，你的自主意识被迫妥协...\n戴紧【头戴耳机】，重新发起对决，赢回属于你的独立空间！`
+        message: `在 ${ai.role.name} 的高压下，你的自主意识被迫妥协...\n重新选择阵容，赢回属于你的独立空间！`
       });
       return true;
     } else if(ai.hp <= 0) {
@@ -1895,8 +1652,8 @@
       showEndGameModal({
         win: true,
         icon: '🏆',
-        title: '逆袭成功！家庭阵地大胜利！',
-        message: `你凭借【独立思考】与【据理力争】，成功让 ${ai.role.name} 尊重了初一少年的独立自主权！家庭关系获得了全新的平等平衡！`
+        title: '逆袭成功！阵地大胜利！',
+        message: `你凭借理智与勇气，成功让 ${ai.role.name} 尊重了初一少年的自主权！阵地获得了全新的平等！`
       });
       return true;
     }
@@ -1911,70 +1668,109 @@
     document.getElementById('end-modal-overlay').classList.remove('hidden');
   }
 
-  function openIntroModal(role) {
-    document.getElementById('intro-avatar').textContent = role.avatar;
-    document.getElementById('intro-name').textContent = role.name;
-    document.getElementById('intro-badge').textContent = role.title;
-    document.getElementById('intro-quote').textContent = role.quote;
+  // 角色选择面板逻辑
+  function openSelectModal() {
+    renderHeroSelectGrid();
+    renderAISelectGrid();
+    document.getElementById('select-modal-overlay').classList.remove('hidden');
+  }
 
-    const skillsBox = document.getElementById('intro-skills');
-    skillsBox.innerHTML = '';
-    role.skills.forEach(s => {
-      const div = document.createElement('div');
-      div.innerHTML = `<span class="font-bold text-amber-300">【${s.name}】</span>: ${s.desc}`;
-      skillsBox.appendChild(div);
+  function renderHeroSelectGrid() {
+    const grid = document.getElementById('hero-select-grid');
+    grid.innerHTML = '';
+    PLAYER_HEROES.forEach(h => {
+      const isSelected = (h.id === selectedHeroId);
+      const card = document.createElement('div');
+      card.className = `p-2 rounded-2xl border-2 cursor-pointer transition flex flex-col items-center text-center ${isSelected ? 'border-sky-400 bg-sky-950/80 shadow-lg scale-102' : 'border-slate-800 bg-slate-950/40 opacity-70 hover:opacity-100'}`;
+      card.onclick = () => { selectedHeroId = h.id; renderHeroSelectGrid(); };
+      card.innerHTML = `
+        <div class="text-3xl mb-1">${h.avatar}</div>
+        <div class="font-black text-xs text-sky-300">${h.name}</div>
+        <div class="text-[9px] text-slate-400 font-bold">${h.title}</div>
+        <div class="text-[8px] text-slate-300 mt-1 whitespace-pre-line">${h.desc}</div>
+      `;
+      grid.appendChild(card);
     });
-
-    document.getElementById('intro-modal-overlay').classList.remove('hidden');
   }
 
-  function closeIntroModal() {
+  function renderAISelectGrid() {
+    const grid = document.getElementById('ai-select-grid');
+    grid.innerHTML = '';
+    AI_ROLES.forEach(r => {
+      const isSelected = (r.id === selectedAIId);
+      const card = document.createElement('div');
+      card.className = `p-2 rounded-2xl border cursor-pointer transition flex items-center gap-2 ${isSelected ? 'border-amber-400 bg-amber-950/80 shadow-md' : 'border-slate-800 bg-slate-900/60 opacity-60 hover:opacity-100'}`;
+      card.onclick = () => { selectedAIId = r.id; renderAISelectGrid(); };
+      card.innerHTML = `
+        <div class="text-2xl">${r.avatar}</div>
+        <div class="text-left">
+          <div class="font-black text-xs text-amber-300">${r.name}</div>
+          <div class="text-[8px] text-amber-200/70">${r.title}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function selectRandomAI() {
+    const rand = AI_ROLES[Math.floor(Math.random() * AI_ROLES.length)];
+    selectedAIId = rand.id;
+    renderAISelectGrid();
+  }
+
+  function confirmCharacterSelection() {
     soundEngine.init();
-    document.getElementById('intro-modal-overlay').classList.add('hidden');
-  }
-
-  function restartGame() {
+    document.getElementById('select-modal-overlay').classList.add('hidden');
     document.getElementById('end-modal-overlay').classList.add('hidden');
     document.getElementById('battle-log').innerHTML = '';
 
-    // 随机抽取一位长辈
-    const selectedRole = AI_ROLES[Math.floor(Math.random() * AI_ROLES.length)];
-    ai.role = selectedRole;
-    ai.hp = selectedRole.maxHp;
-    ai.maxHp = selectedRole.maxHp;
+    const heroObj = PLAYER_HEROES.find(h => h.id === selectedHeroId);
+    const aiObj = AI_ROLES.find(r => r.id === selectedAIId);
+
+    // 重置玩家
+    player.heroId = heroObj.id;
+    player.hp = heroObj.maxHp;
+    player.maxHp = heroObj.maxHp;
+    player.hand = [];
+    player.equip = { weapon: null, armor: null, treasure: null };
+    player.skillCooldown = 0;
+    player.skillUsedThisTurn = false;
+    player.healBlocked = false;
+    player.silencedNextTurn = false;
+    player.headphonesUsedThisRound = false;
+
+    document.getElementById('player-avatar').textContent = heroObj.avatar;
+    document.getElementById('player-hero-name').textContent = heroObj.name;
+    document.getElementById('player-hero-title').textContent = heroObj.title;
+    document.getElementById('hero-skill-btn-text').textContent = heroObj.btnText;
+    document.getElementById('hero-skill-subtext').textContent = heroObj.subText;
+
+    // 重置 AI
+    ai.role = aiObj;
+    ai.hp = aiObj.maxHp;
+    ai.maxHp = aiObj.maxHp;
     ai.armor = 0;
     ai.hand = [];
     ai.equip = { weapon: null, armor: null, treasure: null };
 
-    player.hp = 4;
-    player.maxHp = 4;
-    player.hand = [];
-    player.equip = { weapon: null, armor: null, treasure: null };
-    player.rebelUsedThisTurn = false;
-    player.headphonesUsedThisRound = false;
-    player.healBlocked = false;
-    player.lockedCardIndex = -1;
-    stateHistory = [];
-
-    document.getElementById('ai-name').textContent = selectedRole.name;
-    document.getElementById('ai-avatar').textContent = selectedRole.avatar;
-    document.getElementById('ai-title-badge').textContent = selectedRole.title;
-    document.getElementById('ai-quote').textContent = selectedRole.quote;
+    document.getElementById('ai-avatar').textContent = aiObj.avatar;
+    document.getElementById('ai-name').textContent = aiObj.name;
+    document.getElementById('ai-title-badge').textContent = aiObj.title;
+    document.getElementById('ai-quote').textContent = aiObj.quote;
 
     initDeck();
 
-    addLog(`🎮 家庭卡牌对决开启！你的对手是【${selectedRole.name}】（${selectedRole.title}）。`, "system");
-    addLog(`📢 ${selectedRole.name} 喊话：${selectedRole.quote}`, "ai");
+    addLog(`🎮 对局开始！【${heroObj.name}】VS【${aiObj.name}】（${aiObj.title}）。`, "system");
+    addLog(`📢 ${aiObj.name} 喊话：${aiObj.quote}`, "ai");
 
     drawCards(player, 4);
     drawCards(ai, 4);
 
-    openIntroModal(selectedRole);
     startPlayerTurn();
   }
 
   window.onload = () => {
-    restartGame();
+    openSelectModal();
   };
 </script>
 </body>
