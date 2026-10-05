@@ -14,15 +14,15 @@
             touch-action: manipulation;
             user-select: none;
             -webkit-user-select: none;
-            background-color: #090d16;
+            background-color: #080c14;
             color: #f1f5f9;
         }
 
-        /* Damage floating numbers animation */
+        /* Floating Damage & Action Text */
         @keyframes floatDamage {
             0% { opacity: 1; transform: translate(-50%, 0) scale(0.7); }
-            50% { opacity: 1; transform: translate(-50%, -40px) scale(1.3); }
-            100% { opacity: 0; transform: translate(-50%, -70px) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -42px) scale(1.3); }
+            100% { opacity: 0; transform: translate(-50%, -75px) scale(1); }
         }
         .float-text {
             position: absolute;
@@ -33,7 +33,7 @@
             text-shadow: 0 4px 12px rgba(0,0,0,0.9);
         }
 
-        /* Screen shake effect on damage */
+        /* Screen Shake Animation on Damage */
         @keyframes shake {
             0%, 100% { transform: translate(0, 0); }
             20% { transform: translate(-8px, 4px); }
@@ -45,50 +45,55 @@
             animation: shake 0.35s ease-in-out;
         }
 
-        /* Card Fly to Arena animation */
+        /* Card Fly to Arena Animation */
         @keyframes cardFlyToCenter {
             0% { opacity: 0; transform: scale(0.4) translateY(60px) rotate(-12deg); }
-            60% { opacity: 1; transform: scale(1.1) translateY(-10px) rotate(3deg); }
+            60% { opacity: 1; transform: scale(1.08) translateY(-8px) rotate(3deg); }
             100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
         }
         .card-arena-animate {
-            animation: cardFlyToCenter 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: cardFlyToCenter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* Card Hover & Selection Feedback */
+        /* Card Interactive States */
         .card-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-item:hover:not(.disabled) {
-            transform: translateY(-14px) scale(1.06);
-            box-shadow: 0 16px 28px -6px rgba(59, 130, 246, 0.5);
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 14px 26px -6px rgba(59, 130, 246, 0.5);
         }
         .card-selected {
-            transform: translateY(-20px) scale(1.08) !important;
+            transform: translateY(-18px) scale(1.08) !important;
             border-color: #3b82f6 !important;
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.85) !important;
+            box-shadow: 0 0 22px rgba(59, 130, 246, 0.85) !important;
+        }
+        .card-discard-target {
+            transform: translateY(-18px) scale(1.08) !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 22px rgba(239, 68, 68, 0.85) !important;
         }
 
-        /* Skill Banner Popup Animation */
+        /* Skill Banner Pop-up */
         @keyframes skillBanner {
             0% { transform: scaleX(0); opacity: 0; }
-            30% { transform: scaleX(1); opacity: 1; }
-            70% { transform: scaleX(1); opacity: 1; }
+            25% { transform: scaleX(1); opacity: 1; }
+            75% { transform: scaleX(1); opacity: 1; }
             100% { transform: scaleX(0); opacity: 0; }
         }
         .skill-banner-anim {
             animation: skillBanner 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Glassmorphism Panels */
+        /* Glassmorphism Styling */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.82);
+            background: rgba(15, 23, 42, 0.84);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        /* Custom Scrollbar */
+        /* Scrollbar Styling */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -107,14 +112,14 @@
 </head>
 <body id="app-body" class="h-screen w-screen overflow-hidden flex flex-col justify-between">
 
-    <!-- TOP HEADER / NAV BAR -->
-    <header class="glass-panel px-4 py-2 flex items-center justify-between z-20 shrink-0 border-b border-slate-800">
+    <!-- TOP HEADER NAVBAR -->
+    <header class="glass-panel px-3 sm:px-5 py-2 flex items-center justify-between z-20 shrink-0 border-b border-slate-800">
         <div class="flex items-center gap-3">
-            <span class="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-rose-500 bg-clip-text text-transparent">
+            <span class="text-base sm:text-xl font-black tracking-tight bg-gradient-to-r from-amber-400 via-orange-400 to-rose-500 bg-clip-text text-transparent">
                 家庭阵地战：初一少年的逆袭
             </span>
             <span class="hidden md:inline-block text-[11px] bg-slate-800 text-amber-400/90 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                三国杀模式 v3.0 讽刺桌游
+                三国杀机制 v4.0 (含连发复读机)
             </span>
         </div>
         <div class="flex items-center gap-2">
@@ -134,23 +139,22 @@
     <main class="relative flex-1 flex flex-col justify-between p-2 sm:p-3 gap-2 overflow-hidden max-w-6xl mx-auto w-full">
 
         <!-- AI OPPONENT BOARD -->
-        <section id="ai-board" class="glass-panel rounded-2xl p-2.5 sm:p-3 relative flex flex-col sm:flex-row items-center justify-between gap-3 border border-red-900/30 shrink-0">
-            <!-- AI Floating Text Container -->
+        <section id="ai-board" class="glass-panel rounded-2xl p-2.5 sm:p-3 relative flex flex-col sm:flex-row items-center justify-between gap-2.5 border border-red-900/30 shrink-0">
             <div id="ai-float-container" class="absolute inset-0 pointer-events-none z-30"></div>
 
             <div class="flex items-center gap-3 w-full sm:w-auto">
                 <div class="relative">
-                    <div id="ai-avatar" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-red-600 via-rose-700 to-amber-800 flex items-center justify-center text-3xl font-black shadow-lg border-2 border-red-400/40 shrink-0">
+                    <div id="ai-avatar" class="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-red-600 via-rose-700 to-amber-800 flex items-center justify-center text-3xl font-black shadow-lg border-2 border-red-400/40 shrink-0">
                         👴
                     </div>
                     <div id="ai-turn-badge" class="hidden absolute -top-2 -right-2 bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full animate-bounce shadow-md">
-                        回合中
+                        思考中
                     </div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <h2 id="ai-name" class="font-black text-base sm:text-lg text-red-200 truncate">外公</h2>
-                        <span id="ai-title" class="text-[11px] text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-md border border-amber-800/50 truncate">强迫性购物·过度做菜狂人</span>
+                        <span id="ai-title" class="text-[11px] text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-md border border-amber-800/50 truncate">强迫性购物障碍·暴食厨神</span>
                     </div>
                     <!-- HP & Shield Bar -->
                     <div class="mt-1 flex items-center gap-2">
@@ -160,33 +164,31 @@
                         </div>
                         <span id="ai-hp-text" class="text-xs font-extrabold text-amber-400">4 / 4</span>
                         <div id="ai-shield-badge" class="hidden bg-cyan-950 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-cyan-700/60 flex items-center gap-1">
-                            <span>🛡️ 肚皮护甲:</span> <span id="ai-shield-text">1</span>
+                            <span>🛡️ 肚皮护甲:</span> <span id="ai-shield-text">0</span>
                         </div>
                     </div>
-                    <!-- Traits -->
-                    <div id="ai-traits" class="mt-1.5 text-[11px] text-slate-300 flex flex-wrap gap-1">
-                        <!-- Trait details injected via JS -->
-                    </div>
+                    <!-- Trait & Skills description -->
+                    <div id="ai-traits" class="mt-1 text-[11px] text-slate-300 flex flex-wrap gap-1"></div>
                 </div>
             </div>
 
             <!-- AI Equipments & Hand Count -->
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <div class="flex gap-1.5 text-xs text-slate-300">
-                    <div id="ai-equip-weapon" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[68px] text-center" title="武器">
+                <div class="flex gap-1 text-xs text-slate-300">
+                    <div id="ai-equip-weapon" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[64px] text-center" title="武器">
                         <span class="text-[9px] text-slate-500 block font-semibold">武器</span>
-                        <span class="equip-name font-bold text-amber-400 text-[11px]">无</span>
+                        <span class="equip-name font-bold text-amber-400 text-[10px]">无</span>
                     </div>
-                    <div id="ai-equip-armor" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[68px] text-center" title="防具">
+                    <div id="ai-equip-armor" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[64px] text-center" title="防具">
                         <span class="text-[9px] text-slate-500 block font-semibold">防具</span>
-                        <span class="equip-name font-bold text-blue-400 text-[11px]">无</span>
+                        <span class="equip-name font-bold text-blue-400 text-[10px]">无</span>
                     </div>
-                    <div id="ai-equip-treasure" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[68px] text-center" title="宝物">
+                    <div id="ai-equip-treasure" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[64px] text-center" title="宝物">
                         <span class="text-[9px] text-slate-500 block font-semibold">宝物</span>
-                        <span class="equip-name font-bold text-emerald-400 text-[11px]">无</span>
+                        <span class="equip-name font-bold text-emerald-400 text-[10px]">无</span>
                     </div>
                 </div>
-                <div class="bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-800 flex flex-col items-center justify-center min-w-[52px]">
+                <div class="bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-800 flex flex-col items-center justify-center min-w-[50px]">
                     <span class="text-[9px] text-slate-400 font-bold">手牌</span>
                     <span id="ai-hand-count" class="text-base font-black text-amber-400">4</span>
                 </div>
@@ -196,7 +198,7 @@
         <!-- CENTRAL ARENA & LOGS -->
         <section class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 min-h-0 relative">
 
-            <!-- Left/Center: Arena Card Play & Skill Banner Stage -->
+            <!-- Arena Card Display Slot -->
             <div class="md:col-span-2 glass-panel rounded-2xl p-3 flex flex-col justify-between items-center relative overflow-hidden border border-slate-800/80 min-h-[160px]">
 
                 <!-- Phase Toast Indicator -->
@@ -204,22 +206,22 @@
                     准备就绪...
                 </div>
 
-                <!-- Skill Announcement Banner Banner (Popup overlay) -->
+                <!-- Skill Announcement Banner -->
                 <div id="skill-banner" class="hidden absolute inset-x-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-red-950/90 via-amber-900/90 to-red-950/90 border-y-2 border-amber-400 py-3 text-center z-40 pointer-events-none shadow-2xl backdrop-blur-md">
-                    <span id="skill-banner-text" class="text-lg sm:text-2xl font-black tracking-widest text-amber-200 drop-shadow">
-                        【强迫拆箱】外公塞给你一张快递包裹！
+                    <span id="skill-banner-text" class="text-base sm:text-2xl font-black tracking-widest text-amber-200 drop-shadow">
+                        【强迫拆箱】外公狂买电视购物快递！
                     </span>
                 </div>
 
-                <!-- Played Card Display Showcase Area -->
+                <!-- Arena Played Card Showcase -->
                 <div id="arena-card-slot" class="my-auto flex items-center justify-center min-h-[110px] z-10">
                     <div class="text-xs text-slate-500 italic flex items-center gap-1">
-                        <span>⚔️</span> 战场静悄悄，等待出牌...
+                        <span>⚔️</span> 战场静悄悄，等待双方出牌...
                     </div>
                 </div>
 
-                <!-- DEFENSIVE RESPONSE PANEL (Center Overlay for Player Response) -->
-                <div id="response-modal" class="hidden absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in">
+                <!-- DEFENSIVE RESPONSE MODAL (Center Overlay) -->
+                <div id="response-modal" class="hidden absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in">
                     <div class="glass-panel max-w-md w-full rounded-2xl p-4 border-2 border-amber-500/80 shadow-2xl text-center space-y-3">
                         <div class="text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1">
                             <span>🛡️</span> 紧急响应阶段
@@ -231,14 +233,14 @@
                             请打出【巧妙化解】规避伤害，或选择硬抗承受结果。
                         </p>
                         <div id="response-actions" class="flex flex-wrap gap-2 justify-center pt-2">
-                            <!-- Dynamic buttons injected via JS -->
+                            <!-- Dynamic Response buttons -->
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Right: Battle Log Box -->
+            <!-- Battle Log Window -->
             <div class="glass-panel rounded-2xl p-2.5 flex flex-col border border-slate-800/80 max-h-[170px] md:max-h-full min-h-0">
                 <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 mb-1">
                     <span class="text-xs font-bold text-slate-400 flex items-center gap-1">
@@ -254,7 +256,6 @@
 
         <!-- PLAYER BOARD & HAND CARDS -->
         <section id="player-board" class="glass-panel rounded-2xl p-2.5 sm:p-3 relative flex flex-col gap-2 border border-blue-900/30 shrink-0">
-            <!-- Player Floating Text Container -->
             <div id="player-float-container" class="absolute inset-0 pointer-events-none z-30"></div>
 
             <!-- Player Status Row -->
@@ -286,30 +287,46 @@
 
                 <!-- Player Equipments & Action Buttons -->
                 <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                    <div class="flex gap-1.5 text-xs text-slate-300">
-                        <div id="player-equip-weapon" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[65px] text-center" title="武器">
+                    <div class="flex gap-1 text-xs text-slate-300">
+                        <div id="player-equip-weapon" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[62px] text-center relative group" title="武器">
                             <span class="text-[9px] text-slate-500 block font-semibold">武器</span>
                             <span class="equip-name font-bold text-amber-400 text-[10px]">无</span>
                         </div>
-                        <div id="player-equip-armor" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[65px] text-center" title="防具">
+                        <div id="player-equip-armor" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[62px] text-center" title="防具">
                             <span class="text-[9px] text-slate-500 block font-semibold">防具</span>
                             <span class="equip-name font-bold text-blue-400 text-[10px]">无</span>
                         </div>
-                        <div id="player-equip-treasure" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[65px] text-center" title="宝物">
+                        <div id="player-equip-treasure" class="px-2 py-1 bg-slate-900/90 rounded-lg border border-slate-800 min-w-[62px] text-center" title="宝物">
                             <span class="text-[9px] text-slate-500 block font-semibold">宝物</span>
                             <span class="equip-name font-bold text-emerald-400 text-[10px]">无</span>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2">
+                        <!-- Play Card Button -->
                         <button id="btn-play-card" onclick="playSelectedCard()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl shadow-md transition transform active:scale-95 border border-blue-400/30">
                             打出卡牌
                         </button>
-                        <button id="btn-end-turn" onclick="playerEndTurn()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition">
+                        <!-- End Turn Button -->
+                        <button id="btn-end-turn" onclick="handlePlayerEndTurnClick()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition">
                             结束回合
+                        </button>
+                        <!-- Confirm Discard Button (Interactive Discard Mode) -->
+                        <button id="btn-confirm-discard" onclick="confirmInteractiveDiscard()" class="hidden px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl shadow-md transition border border-rose-400/40 animate-bounce">
+                            确认弃牌 (<span id="discard-count-text">0/0</span>)
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- INTERACTIVE DISCARD BANNER INSTRUCTION -->
+            <div id="discard-instruction-banner" class="hidden bg-red-950/90 border border-red-500/50 rounded-xl px-3 py-1.5 text-center text-xs text-rose-200 flex items-center justify-between">
+                <span class="font-bold flex items-center gap-1">
+                    <span>⚠️</span> 【互动弃牌模式】当前手牌超限！请在手牌中点击勾选需弃掉的牌。
+                </span>
+                <span id="discard-needed-badge" class="font-black text-amber-300 bg-red-900/80 px-2.5 py-0.5 rounded-lg border border-red-700">
+                    还需选择 0 张
+                </span>
             </div>
 
             <!-- Player Hand Cards Scroll Container -->
@@ -323,44 +340,40 @@
 
     <!-- START & CHARACTER SELECTION MODAL -->
     <div id="modal-char-select" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="glass-panel max-w-4xl w-full rounded-3xl p-5 sm:p-7 border border-slate-700 shadow-2xl my-auto">
-            <div class="text-center mb-5">
+        <div class="glass-panel max-w-4xl w-full rounded-3xl p-4 sm:p-6 border border-slate-700 shadow-2xl my-auto">
+            <div class="text-center mb-4">
                 <h1 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-amber-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">
                     《家庭阵地战：初一少年的逆袭》
                 </h1>
-                <p class="text-xs sm:text-sm text-slate-400 mt-1">请选择你的少年主角身份，并挑选一位家长/老师作为你的管教对手！</p>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1">请选择你的少年主角身份，并挑选一位管教者（长辈或老师）作为你的对局对手！</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Step 1: Choose Student -->
                 <div>
-                    <h3 class="text-xs sm:text-sm font-black text-blue-400 mb-2.5 flex items-center gap-2">
+                    <h3 class="text-xs sm:text-sm font-black text-blue-400 mb-2 flex items-center gap-2">
                         <span class="w-5 h-5 rounded-full bg-blue-600/30 text-blue-300 flex items-center justify-center text-xs">1</span>
                         选择你的角色 (玩家主角)
                     </h3>
-                    <div id="student-select-grid" class="grid grid-cols-2 gap-2">
-                        <!-- Dynamic Student selection cards -->
-                    </div>
+                    <div id="student-select-grid" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
                 <!-- Step 2: Choose Opponent -->
                 <div>
-                    <h3 class="text-xs sm:text-sm font-black text-red-400 mb-2.5 flex items-center justify-between">
+                    <h3 class="text-xs sm:text-sm font-black text-red-400 mb-2 flex items-center justify-between">
                         <span class="flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-red-600/30 text-red-300 flex items-center justify-center text-xs">2</span>
                             选择管教对手 (电脑 AI)
                         </span>
                         <button onclick="selectRandomOpponent()" class="text-xs text-amber-400 hover:underline">
-                            🎲 随机挑选
+                            🎲 随机挑选对手
                         </button>
                     </h3>
-                    <div id="opponent-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
-                        <!-- Dynamic Opponent selection cards -->
-                    </div>
+                    <div id="opponent-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[290px] overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-center">
+            <div class="mt-5 flex justify-center">
                 <button onclick="startGame()" class="px-8 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black text-base rounded-2xl shadow-xl shadow-orange-500/20 transition transform hover:scale-105 active:scale-95 border border-amber-300/40">
                     ⚔️ 开 始 阵 地 战
                 </button>
@@ -404,9 +417,10 @@
         </div>
     </div>
 
+    <!-- SCRIPT SECTION -->
     <script>
         /* ==========================================================================
-           1. WEB AUDIO API SYNTHESIZER ENGINE (Zero External Audio Assets)
+           1. WEB AUDIO API SYNTHESIZER ENGINE (Zero External Audio Files)
            ========================================================================== */
         class SoundEngine {
             constructor() {
@@ -435,20 +449,20 @@
                         const osc = this.ctx.createOscillator();
                         const gain = this.ctx.createGain();
                         osc.type = 'sine';
-                        osc.frequency.setValueAtTime(350, now);
-                        osc.frequency.exponentialRampToValueAtTime(700, now + 0.1);
+                        osc.frequency.setValueAtTime(360, now);
+                        osc.frequency.exponentialRampToValueAtTime(720, now + 0.09);
                         gain.gain.setValueAtTime(0.12, now);
-                        gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                        gain.gain.linearRampToValueAtTime(0.01, now + 0.09);
                         osc.connect(gain);
                         gain.connect(this.ctx.destination);
                         osc.start(now);
-                        osc.stop(now + 0.1);
+                        osc.stop(now + 0.09);
                     } else if (type === 'strike') {
                         const osc = this.ctx.createOscillator();
                         const gain = this.ctx.createGain();
                         osc.type = 'sawtooth';
-                        osc.frequency.setValueAtTime(550, now);
-                        osc.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+                        osc.frequency.setValueAtTime(580, now);
+                        osc.frequency.exponentialRampToValueAtTime(130, now + 0.15);
                         gain.gain.setValueAtTime(0.2, now);
                         gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
                         osc.connect(gain);
@@ -459,14 +473,14 @@
                         const osc = this.ctx.createOscillator();
                         const gain = this.ctx.createGain();
                         osc.type = 'square';
-                        osc.frequency.setValueAtTime(100, now);
-                        osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
-                        gain.gain.setValueAtTime(0.3, now);
-                        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                        osc.frequency.setValueAtTime(110, now);
+                        osc.frequency.exponentialRampToValueAtTime(32, now + 0.22);
+                        gain.gain.setValueAtTime(0.25, now);
+                        gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
                         osc.connect(gain);
                         gain.connect(this.ctx.destination);
                         osc.start(now);
-                        osc.stop(now + 0.25);
+                        osc.stop(now + 0.22);
                     } else if (type === 'heal') {
                         [523.25, 659.25, 783.99].forEach((freq, idx) => {
                             const osc = this.ctx.createOscillator();
@@ -484,14 +498,14 @@
                         const osc = this.ctx.createOscillator();
                         const gain = this.ctx.createGain();
                         osc.type = 'triangle';
-                        osc.frequency.setValueAtTime(250, now);
-                        osc.frequency.linearRampToValueAtTime(850, now + 0.3);
-                        gain.gain.setValueAtTime(0.25, now);
-                        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                        osc.frequency.setValueAtTime(260, now);
+                        osc.frequency.linearRampToValueAtTime(880, now + 0.28);
+                        gain.gain.setValueAtTime(0.22, now);
+                        gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
                         osc.connect(gain);
                         gain.connect(this.ctx.destination);
                         osc.start(now);
-                        osc.stop(now + 0.3);
+                        osc.stop(now + 0.28);
                     } else if (type === 'win') {
                         [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
                             const osc = this.ctx.createOscillator();
@@ -533,7 +547,7 @@
         }
 
         /* ==========================================================================
-           2. GAME DATA & CHARACTERS DEFINITION
+           2. GAME DATA: BALANCED CHARACTERS (4 STUDENTS + 11 OPPONENTS) & CARDS
            ========================================================================== */
         const STUDENTS = {
             rebel: {
@@ -542,7 +556,7 @@
                 title: '正面刚魔王',
                 avatar: '👦',
                 maxHp: 4,
-                desc: '【顶嘴反击】受到攻击伤害时，可弃掉1张牌对对手造成1点反击伤害。'
+                desc: '【顶嘴反击】：被【表达主见】打中时，可弃1张牌反击对手1点伤害。'
             },
             top_student: {
                 id: 'top_student',
@@ -550,7 +564,7 @@
                 title: '解题降维打击',
                 avatar: '🤓',
                 maxHp: 3,
-                desc: '【降维打击】摸牌阶段多摸1张牌；打出的【表达主见】需2张【巧妙化解】才能抵消。'
+                desc: '【降维打击】：摸牌阶段多摸1张牌；你的【表达主见】需2张【巧妙化解】才能抵消。'
             },
             slacker: {
                 id: 'slacker',
@@ -558,7 +572,7 @@
                 title: '挂机摸鱼第一名',
                 avatar: '💻',
                 maxHp: 4,
-                desc: '【偷懒关麦】可将任意手牌当【巧妙化解】使用；手牌上限+1。'
+                desc: '【偷懒关麦】：任意手牌均可当【巧妙化解】打出；手牌上限为HP+1。'
             },
             jock: {
                 id: 'jock',
@@ -566,7 +580,7 @@
                 title: '强身突击者',
                 avatar: '🏀',
                 maxHp: 5,
-                desc: '【体能突击】体力上限5；每回合首次【表达主见】不可被规避。'
+                desc: '【体能突击】：初始体力5；每回合首次打出【表达主见】不可被规避。'
             }
         };
 
@@ -574,12 +588,12 @@
             grandpa: {
                 id: 'grandpa',
                 name: '外公',
-                title: '强迫性购物·过度做菜狂人',
+                title: '强迫性购物障碍·暴食厨神',
                 avatar: '👴',
                 maxHp: 4,
-                trait: '肚皮圆滚滚，天天看电视购物买劣质包裹堆满客厅，顿顿做八菜一汤大鱼大肉硬撑！',
-                skill1: '【强迫拆箱】：摸牌阶段额外摸1张“电视快递包裹牌”（赋予随机牌或塞给玩家垃圾）。',
-                skill2: '【暴食做菜】：使用【喘息复原】或回复时因圆滚滚肚皮获得+1护甲，并强制塞1张硬菜塞给玩家。'
+                trait: '强迫性购物障碍，天天看电视购物买劣质包裹，顿顿做大鱼大肉硬撑，肚子圆滚滚！',
+                skill1: '【强迫拆箱】：摸牌阶段额外摸1张“电视快递包裹”，可塞给玩家杂物卡或触发随机牌。',
+                skill2: '【暴食做菜】：使用【喘息复原】或回合开始时大鱼大肉，获得+1肚皮护甲，并强塞重油硬菜到玩家手牌。'
             },
             mom: {
                 id: 'mom',
@@ -587,8 +601,8 @@
                 title: '海量报班指挥官',
                 avatar: '👩',
                 maxHp: 4,
-                trait: '连环报班狂人',
-                skill1: '【海量报班】：回合开始时弃置玩家1张手牌，造成1点精神压力。'
+                trait: '连环补习报班狂人，三句不离“别人家孩子”。',
+                skill1: '【海量报班】：回合开始时弃置玩家1张手牌，若玩家手牌不足则造成1点精神压力。'
             },
             grandma: {
                 id: 'grandma',
@@ -596,8 +610,8 @@
                 title: '有一种冷叫外婆觉得你冷',
                 avatar: '👵',
                 maxHp: 4,
-                trait: '养生偏方大爆发',
-                skill1: '【穿上秋裤】：强行给玩家塞防具【秋裤】，锁定玩家出牌速度。'
+                trait: '养生偏方大爆发，强塞御寒衣物。',
+                skill1: '【穿上秋裤】：强行给玩家装备负面防具【秋裤】，锁定玩家抽牌上限。'
             },
             yeye: {
                 id: 'yeye',
@@ -605,8 +619,8 @@
                 title: '微信谣言洗脑者',
                 avatar: '👴',
                 maxHp: 4,
-                trait: '转发养生朋友圈',
-                skill1: '【谣言洗脑】：对玩家进行判定，未通过则强制弃置2张手牌。'
+                trait: '热衷转发家庭群养生谣言。',
+                skill1: '【谣言洗脑】：对玩家进行判定，未通过则强制玩家弃置2张手牌。'
             },
             naina: {
                 id: 'naina',
@@ -614,8 +628,8 @@
                 title: '连环唠叨魔咒',
                 avatar: '👵',
                 maxHp: 4,
-                trait: '耳边唐僧念经',
-                skill1: '【唠叨魔咒】：限制玩家下一回合不能使用锦囊牌。'
+                trait: '耳边唐僧念经，根本停不下来。',
+                skill1: '【唠叨魔咒】：封锁玩家下一回合的锦囊牌使用。'
             },
             dad: {
                 id: 'dad',
@@ -623,8 +637,8 @@
                 title: '绝对权威·固执己见',
                 avatar: '👨',
                 maxHp: 4,
-                trait: '威严不可侵犯',
-                skill1: '【绝对权威】：受到伤害时50%概率直接反弹给玩家。'
+                trait: '威严不可侵犯，动辄严厉训斥。',
+                skill1: '【绝对权威】：受到伤害时50%概率直接反弹1点伤害给玩家。'
             },
             math_teacher: {
                 id: 'math_teacher',
@@ -632,8 +646,8 @@
                 title: '函数压制组长',
                 avatar: '📐',
                 maxHp: 3,
-                trait: '突查解析几何',
-                skill1: '【函数压制】：当玩家手牌数为偶数时，【表达主见】造成双倍伤害。'
+                trait: '突查解析几何与立体几何。',
+                skill1: '【函数压制】：当玩家手牌数为偶数时，打出的【表达主见】造成双倍伤害。'
             },
             chinese_teacher: {
                 id: 'chinese_teacher',
@@ -641,7 +655,7 @@
                 title: '朗读并背诵全文',
                 avatar: '📚',
                 maxHp: 4,
-                trait: '死记硬背',
+                trait: '死记硬背与古诗词文言文连环考察。',
                 skill1: '【背诵全文】：强制玩家弃置2张手牌，否则承受1点伤害。'
             },
             english_teacher: {
@@ -650,8 +664,8 @@
                 title: '语法纠错严考官',
                 avatar: '🎧',
                 maxHp: 3,
-                trait: '听力全英文',
-                skill1: '【语法纠错】：封锁玩家装备栏，使所有防具失效。'
+                trait: '全英文听力考查，纠错眼尖。',
+                skill1: '【语法纠错】：封锁玩家装备栏，使所有装备牌效果暂时失效。'
             },
             pe_teacher: {
                 id: 'pe_teacher',
@@ -659,7 +673,7 @@
                 title: '经常“被生病”的主任',
                 avatar: '👟',
                 maxHp: 5,
-                trait: '占课体能测验',
+                trait: '随时准备占课做千米体测。',
                 skill1: '【占课体测】：剥夺玩家下一回合的摸牌阶段。'
             },
             principal: {
@@ -668,29 +682,30 @@
                 title: '全校巡视动员者',
                 avatar: '👔',
                 maxHp: 5,
-                trait: '升旗仪式训话',
-                skill1: '【训话动员】：全场威压，每回合开始强制对玩家造成1点压力。'
+                trait: '升旗仪式与广播体操全局威压。',
+                skill1: '【全校训话】：回合开始强制造成玩家1点精神压力，除非玩家装备了【降噪耳机】。'
             }
         };
 
-        // CARDS PRESETS
         const CARD_TYPES = {
-            STRIKE: { id: 'strike', name: '表达主见', type: 'basic', color: 'from-rose-600 to-red-700', border: 'border-red-500', desc: '【杀】攻击牌：对对手造成1点伤害。' },
-            DODGE: { id: 'dodge', name: '巧妙化解', type: 'basic', color: 'from-sky-600 to-blue-700', border: 'border-blue-400', desc: '【闪】防御牌：抵消1次【表达主见】。' },
-            HEAL: { id: 'heal', name: '喘息复原', type: 'basic', color: 'from-emerald-600 to-teal-700', border: 'border-emerald-400', desc: '【桃】回复牌：恢复1点精神值/威严值。' },
+            STRIKE: { id: 'strike', name: '表达主见', type: 'basic', color: 'from-rose-600 to-red-700', border: 'border-red-500', desc: '【杀】基础牌：对对手造成1点伤害。（默认每回合限打出1张）' },
+            DODGE: { id: 'dodge', name: '巧妙化解', type: 'basic', color: 'from-sky-600 to-blue-700', border: 'border-blue-400', desc: '【闪】基础牌：抵消1次【表达主见】。' },
+            HEAL: { id: 'heal', name: '喘息复原', type: 'basic', color: 'from-emerald-600 to-teal-700', border: 'border-emerald-400', desc: '【桃】基础牌：恢复1点精神值/威严值。' },
 
             // Tricks
             DRAW_TWO: { id: 'draw_two', name: '独立思考', type: 'trick', color: 'from-amber-600 to-orange-700', border: 'border-amber-400', desc: '【无中生有】锦囊：立即摸2张卡牌。' },
             DISMANTLE: { id: 'dismantle', name: '划清界限', type: 'trick', color: 'from-stone-600 to-slate-800', border: 'border-stone-400', desc: '【过河拆桥】锦囊：弃置对手1张手牌或装备。' },
-            DUEL: { id: 'duel', name: '据理力争', type: 'trick', color: 'from-purple-600 to-indigo-800', border: 'border-purple-400', desc: '【决斗】锦囊：双方轮流打出【表达主见】，没打出者受1点伤害。' },
+            DUEL: { id: 'duel', name: '据理力争', type: 'trick', color: 'from-purple-600 to-indigo-800', border: 'border-purple-400', desc: '【决斗】锦囊：双方轮流打出【表达主见】，无法打出者受1点伤害。' },
             STEAL: { id: 'steal', name: '查漏补缺', type: 'trick', color: 'from-indigo-600 to-blue-800', border: 'border-indigo-400', desc: '【顺手牵羊】锦囊：抽取对手1张手牌或装备。' },
-            PACKAGE: { id: 'package', name: '劣质快递', type: 'trick', color: 'from-yellow-700 to-amber-800', border: 'border-yellow-500', desc: '【快递包裹】外公特产：打出可随机获取卡牌，或作为垃圾卡牌。' },
+            PACKAGE: { id: 'package', name: '电视快递', type: 'trick', color: 'from-yellow-700 to-amber-800', border: 'border-yellow-500', desc: '【劣质包裹】外公特产：打出可摸2张牌，或随机塞给对方杂物。' },
+            HEAVY_DISH: { id: 'heavy_dish', name: '大鱼大肉', type: 'trick', color: 'from-orange-800 to-red-900', border: 'border-orange-500', desc: '【暴食菜肴】：外公硬塞的硬菜！占据手牌空间，弃置时无额外效果。' },
 
-            // Equipments
-            HEADPHONES: { id: 'headphones', name: '降噪耳机', type: 'armor', color: 'from-blue-800 to-indigo-900', border: 'border-blue-400', desc: '防具：50%概率自动抵消对手的【表达主见】。' },
-            BAG: { id: 'bag', name: '防弹书包', type: 'armor', color: 'from-cyan-800 to-teal-900', border: 'border-cyan-400', desc: '防具：每回合首次受到的伤害减1。' },
-            RACKET: { id: 'racket', name: '羽毛球拍', type: 'weapon', color: 'from-rose-700 to-red-800', border: 'border-rose-400', desc: '武器：打出【表达主见】时伤害+1。' },
-            CUP: { id: 'cup', name: '保温杯', type: 'treasure', color: 'from-amber-700 to-yellow-800', border: 'border-amber-400', desc: '宝物：回合结束时，若血量未满则50%概率恢复1点。' }
+            // Equipments (Including NEW Multi-strike repeater weapon)
+            REPEATER: { id: 'repeater', name: '连发复读机', type: 'weapon', color: 'from-red-600 to-amber-700', border: 'border-amber-300', desc: '【诸葛连弩武器】：无视出牌限制！装备后本回合打出【表达主见】无次数限制！' },
+            RACKET: { id: 'racket', name: '高频吐槽嘴', type: 'weapon', color: 'from-rose-700 to-red-800', border: 'border-rose-400', desc: '【武器】：打出【表达主见】时伤害额外+1。' },
+            HEADPHONES: { id: 'headphones', name: '降噪耳机', type: 'armor', color: 'from-blue-800 to-indigo-900', border: 'border-blue-400', desc: '【防具】：50%概率自动抵消对手的【表达主见】。' },
+            BAG: { id: 'bag', name: '防弹书包', type: 'armor', color: 'from-cyan-800 to-teal-900', border: 'border-cyan-400', desc: '【防具】：每回合首次受到的伤害减1。' },
+            CUP: { id: 'cup', name: '保鲜保温杯', type: 'treasure', color: 'from-amber-700 to-yellow-800', border: 'border-amber-400', desc: '【宝物】：回合结束时，若血量未满则50%概率恢复1点。' }
         };
 
         /* ==========================================================================
@@ -699,13 +714,14 @@
         const GAME_STATES = {
             IDLE: 'IDLE',
             PLAYER_TURN: 'PLAYER_TURN',
+            PLAYER_DISCARD: 'PLAYER_DISCARD', // Interactive Discard Mode
             AI_TURN: 'AI_TURN',
             PLAYER_RESPONSE: 'PLAYER_RESPONSE',
             GAME_OVER: 'GAME_OVER'
         };
 
         let state = {
-            runId: 0, // Unique token to instantly kill obsolete async delays
+            runId: 0, // Unique session token to terminate obsolete async loops cleanly
             gameState: GAME_STATES.IDLE,
             selectedStudent: 'rebel',
             selectedOpponent: 'grandpa',
@@ -714,6 +730,7 @@
                 name: '初一叛逆少年',
                 hp: 4,
                 maxHp: 4,
+                strikeCountThisTurn: 0, // Track strike uses
                 hand: [],
                 equip: { weapon: null, armor: null, treasure: null }
             },
@@ -723,12 +740,14 @@
                 hp: 4,
                 maxHp: 4,
                 shield: 0,
+                strikeCountThisTurn: 0, // Track AI strike uses
                 hand: [],
                 equip: { weapon: null, armor: null, treasure: null }
             },
             deck: [],
             discardPile: [],
             selectedCardIdx: null,
+            selectedDiscardIndices: [], // For Interactive Discard Mode multi-selection
             historyStack: [],
             isGameOver: false
         };
@@ -763,6 +782,7 @@
             add('DUEL', 4);
             add('STEAL', 4);
             add('PACKAGE', 3);
+            add('REPEATER', 3); // Zhuge Crossbow equivalent (Multi-Strike weapon)
             add('HEADPHONES', 2);
             add('BAG', 2);
             add('RACKET', 2);
@@ -779,7 +799,7 @@
         function drawCard(target) {
             if (state.deck.length === 0) {
                 if (state.discardPile.length === 0) return null;
-                logBattle('⚠️ 牌堆已空，重新洗牌并归入牌堆！', 'text-amber-400 font-bold');
+                logBattle('⚠️ 牌堆已空，将弃牌堆重新洗牌归入牌堆！', 'text-amber-400 font-bold');
                 state.deck = [...state.discardPile];
                 state.discardPile = [];
                 for (let i = state.deck.length - 1; i > 0; i--) {
@@ -808,7 +828,7 @@
         }
 
         function undoLastAction() {
-            if (state.historyStack.length === 0 || state.gameState !== GAME_STATES.PLAYER_TURN) return;
+            if (state.historyStack.length === 0 || (state.gameState !== GAME_STATES.PLAYER_TURN && state.gameState !== GAME_STATES.PLAYER_DISCARD)) return;
             const snapshot = state.historyStack.pop();
             if (!snapshot) return;
 
@@ -819,15 +839,17 @@
             state.deck = parsed.deck;
             state.discardPile = parsed.discardPile;
             state.selectedCardIdx = null;
+            state.selectedDiscardIndices = [];
 
-            logBattle('↺ 执行【悔一步】：游戏状态已恢复至上一步。', 'text-cyan-300 font-bold');
+            logBattle('↺ 执行【悔一步】：已回退至上一动作状态。', 'text-cyan-300 font-bold');
             updateUndoButton();
             renderAll();
         }
 
         function updateUndoButton() {
             const btn = document.getElementById('btn-undo');
-            if (state.historyStack.length > 0 && state.gameState === GAME_STATES.PLAYER_TURN) {
+            const canUndo = state.historyStack.length > 0 && (state.gameState === GAME_STATES.PLAYER_TURN || state.gameState === GAME_STATES.PLAYER_DISCARD);
+            if (canUndo) {
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
@@ -854,7 +876,7 @@
             document.getElementById('player-hp-bar').style.width = `${hpPct}%`;
 
             // Turn Badge
-            if (state.gameState === GAME_STATES.PLAYER_TURN) {
+            if (state.gameState === GAME_STATES.PLAYER_TURN || state.gameState === GAME_STATES.PLAYER_DISCARD) {
                 document.getElementById('player-turn-badge').classList.remove('hidden');
             } else {
                 document.getElementById('player-turn-badge').classList.add('hidden');
@@ -865,33 +887,78 @@
             document.getElementById('player-equip-armor').querySelector('.equip-name').innerText = p.equip.armor ? p.equip.armor.name : '无';
             document.getElementById('player-equip-treasure').querySelector('.equip-name').innerText = p.equip.treasure ? p.equip.treasure.name : '无';
 
-            // Hand Cards
+            // Calculate Max Hand Capacity
+            const maxHand = state.selectedStudent === 'slacker' ? p.hp + 1 : p.hp;
+
+            // Interactive Discard Banner & Button controls
+            const discardBanner = document.getElementById('discard-instruction-banner');
+            const confirmDiscardBtn = document.getElementById('btn-confirm-discard');
+            const playBtn = document.getElementById('btn-play-card');
+            const endBtn = document.getElementById('btn-end-turn');
+
+            if (state.gameState === GAME_STATES.PLAYER_DISCARD) {
+                const neededCount = p.hand.length - maxHand;
+                const selectedCount = state.selectedDiscardIndices.length;
+
+                discardBanner.classList.remove('hidden');
+                document.getElementById('discard-needed-badge').innerText = `还需选择 ${Math.max(0, neededCount - selectedCount)} 张`;
+
+                confirmDiscardBtn.classList.remove('hidden');
+                document.getElementById('discard-count-text').innerText = `${selectedCount}/${neededCount}`;
+                confirmDiscardBtn.disabled = selectedCount !== neededCount;
+
+                playBtn.classList.add('hidden');
+                endBtn.classList.add('hidden');
+            } else {
+                discardBanner.classList.add('hidden');
+                confirmDiscardBtn.classList.add('hidden');
+                playBtn.classList.remove('hidden');
+                endBtn.classList.remove('hidden');
+
+                const isMyTurn = state.gameState === GAME_STATES.PLAYER_TURN;
+                playBtn.disabled = !isMyTurn || state.selectedCardIdx === null;
+                endBtn.disabled = !isMyTurn;
+            }
+
+            // Render Hand Cards
             const container = document.getElementById('player-hand-container');
             container.innerHTML = '';
             p.hand.forEach((card, idx) => {
                 const el = document.createElement('div');
-                const isSelected = state.selectedCardIdx === idx;
-                el.className = `card-item shrink-0 w-24 sm:w-28 h-32 rounded-xl bg-gradient-to-br ${card.color} border-2 ${card.border} p-2 flex flex-col justify-between cursor-pointer shadow-lg relative ${isSelected ? 'card-selected' : ''}`;
-                el.onclick = () => selectPlayerCard(idx);
 
-                el.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-black tracking-tight text-white">${card.name}</span>
-                        <span class="text-[8px] px-1 bg-black/50 rounded text-slate-200">${card.type === 'basic' ? '基础' : card.type === 'trick' ? '锦囊' : '装备'}</span>
-                    </div>
-                    <div class="text-[10px] text-white/90 leading-tight my-auto font-medium line-clamp-3">${card.desc}</div>
-                    <div class="text-[8px] text-white/50 text-right font-semibold">${isSelected ? '▲ 已选中' : '点击选择'}</div>
-                `;
+                if (state.gameState === GAME_STATES.PLAYER_DISCARD) {
+                    // INTERACTIVE DISCARD SELECTION MODE
+                    const isDiscardSelected = state.selectedDiscardIndices.includes(idx);
+                    el.className = `card-item shrink-0 w-24 sm:w-28 h-32 rounded-xl bg-gradient-to-br ${card.color} border-2 ${card.border} p-2 flex flex-col justify-between cursor-pointer shadow-lg relative ${isDiscardSelected ? 'card-discard-target' : ''}`;
+                    el.onclick = () => toggleDiscardSelection(idx);
+
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-black tracking-tight text-white">${card.name}</span>
+                            <span class="text-[14px]">${isDiscardSelected ? '✅' : '⬜'}</span>
+                        </div>
+                        <div class="text-[10px] text-white/90 leading-tight my-auto font-medium line-clamp-3">${card.desc}</div>
+                        <div class="text-[9px] ${isDiscardSelected ? 'text-red-300 font-black' : 'text-slate-300'} text-right font-bold">
+                            ${isDiscardSelected ? '勾选弃置' : '点击勾选'}
+                        </div>
+                    `;
+                } else {
+                    // NORMAL PLAY MODE
+                    const isSelected = state.selectedCardIdx === idx;
+                    el.className = `card-item shrink-0 w-24 sm:w-28 h-32 rounded-xl bg-gradient-to-br ${card.color} border-2 ${card.border} p-2 flex flex-col justify-between cursor-pointer shadow-lg relative ${isSelected ? 'card-selected' : ''}`;
+                    el.onclick = () => selectPlayerCard(idx);
+
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-black tracking-tight text-white">${card.name}</span>
+                            <span class="text-[8px] px-1 bg-black/50 rounded text-slate-200">${card.type === 'basic' ? '基础' : card.type === 'trick' ? '锦囊' : '装备'}</span>
+                        </div>
+                        <div class="text-[10px] text-white/90 leading-tight my-auto font-medium line-clamp-3">${card.desc}</div>
+                        <div class="text-[8px] text-white/50 text-right font-semibold">${isSelected ? '▲ 已选中' : '点击选择'}</div>
+                    `;
+                }
                 container.appendChild(el);
             });
-
-            // Action Buttons
-            const playBtn = document.getElementById('btn-play-card');
-            const endBtn = document.getElementById('btn-end-turn');
-            const isMyTurn = state.gameState === GAME_STATES.PLAYER_TURN;
-
-            playBtn.disabled = !isMyTurn || state.selectedCardIdx === null;
-            endBtn.disabled = !isMyTurn;
         }
 
         function renderAi() {
@@ -936,8 +1003,13 @@
         function renderArena() {
             const toast = document.getElementById('phase-toast');
             if (state.gameState === GAME_STATES.PLAYER_TURN) {
-                toast.innerText = '👉 你的出牌阶段（选择卡牌打出或结束回合）';
+                const hasRepeater = state.player.equip.weapon && state.player.equip.weapon.id === 'repeater';
+                const strikeStatus = hasRepeater ? '⚡ 已装备连发复读机(无限表达)' : `表达主见已用 ${state.player.strikeCountThisTurn}/1 次`;
+                toast.innerText = `👉 你的出牌阶段 (${strikeStatus})`;
                 toast.className = 'text-xs sm:text-sm font-black px-4 py-1 rounded-full bg-blue-950/90 text-blue-300 border border-blue-500/50 shadow-lg';
+            } else if (state.gameState === GAME_STATES.PLAYER_DISCARD) {
+                toast.innerText = '🗑️ 【互动弃牌模式】请勾选需要弃掉的卡牌';
+                toast.className = 'text-xs sm:text-sm font-black px-4 py-1 rounded-full bg-rose-950/90 text-rose-300 border border-rose-500/50 shadow-lg animate-pulse';
             } else if (state.gameState === GAME_STATES.AI_TURN) {
                 toast.innerText = `⏳ ${state.ai.name} 思考与出牌中...`;
                 toast.className = 'text-xs sm:text-sm font-black px-4 py-1 rounded-full bg-red-950/90 text-red-300 border border-red-500/50 shadow-lg animate-pulse';
@@ -963,8 +1035,7 @@
             const bannerText = document.getElementById('skill-banner-text');
             bannerText.innerText = text;
             banner.classList.remove('hidden', 'skill-banner-anim');
-            // Trigger reflow
-            void banner.offsetWidth;
+            void banner.offsetWidth; // Reflow
             banner.classList.add('skill-banner-anim');
             setTimeout(() => {
                 banner.classList.add('hidden');
@@ -1004,20 +1075,35 @@
         async function runAiTurn() {
             const currentRunId = state.runId;
             state.gameState = GAME_STATES.AI_TURN;
+            state.ai.strikeCountThisTurn = 0; // Reset strike counter
             renderAll();
 
             try {
-                await delay(1000, currentRunId);
+                await delay(900, currentRunId);
 
-                // Check Grandpa Traits & Skills at Start of Turn
+                // Grandpa Traits & Skills at Start of Turn
                 if (state.selectedOpponent === 'grandpa') {
-                    showSkillBanner('【强迫拆箱】外公狂看电视购物拆包裹！');
-                    logBattle('👴 【外公】触发技能【强迫拆箱】：电视购物快递到货！额外抽1张快递牌！', 'text-amber-300 font-bold');
+                    showSkillBanner('【强迫拆箱】外公狂买电视购物快递！');
+                    logBattle('👴 【外公】触发【强迫拆箱】：电视购物快递送达！额外抽1张快递包裹牌！', 'text-amber-300 font-bold');
                     sound.play('skill');
-                    showFloatingText('ai', '+快递包裹!', 'text-amber-300');
+                    showFloatingText('ai', '+电视快递!', 'text-amber-300');
                     drawCard(state.ai);
                     renderAll();
-                    await delay(1200, currentRunId);
+                    await delay(1100, currentRunId);
+
+                    // Grandpa skill 2: Glutonous cooking feast
+                    if (state.ai.hp < state.ai.maxHp || Math.random() < 0.5) {
+                        state.ai.shield += 1;
+                        showSkillBanner('【暴食做菜】外公做了八菜一汤！肚皮护甲+1！');
+                        showFloatingText('ai', '+1 肚皮护甲', 'text-cyan-300');
+                        logBattle('🍲 【外公】发动【暴食做菜】：享用大鱼大肉，因圆滚滚的肚皮获得1点护甲！并硬塞重油菜肴给玩家！', 'text-emerald-300 font-bold');
+
+                        // Force heavy dish card into player's hand!
+                        const dishCard = { ...CARD_TYPES.HEAVY_DISH, uid: Math.random().toString(36).substr(2, 9) };
+                        state.player.hand.push(dishCard);
+                        renderAll();
+                        await delay(1200, currentRunId);
+                    }
                 }
 
                 // AI Draw Phase
@@ -1025,7 +1111,7 @@
                 drawCard(state.ai);
                 drawCard(state.ai);
                 renderAll();
-                await delay(1200, currentRunId);
+                await delay(1100, currentRunId);
 
                 // AI Play Actions Loop
                 let canContinue = true;
@@ -1034,30 +1120,22 @@
                 while (canContinue && state.ai.hand.length > 0 && actionsTaken < 5 && !state.isGameOver) {
                     let playedCard = false;
 
-                    // 1. Grandpa Heal & Gluttonous Cooking Skill
+                    // 1. Grandpa Heal & Cooking Skill
                     if (state.selectedOpponent === 'grandpa' && state.ai.hp < state.ai.maxHp) {
                         const healIdx = state.ai.hand.findIndex(c => c.id === 'heal');
                         if (healIdx !== -1) {
                             const card = state.ai.hand.splice(healIdx, 1)[0];
                             state.discardPile.push(card);
                             state.ai.hp = Math.min(state.ai.maxHp, state.ai.hp + 1);
-                            state.ai.shield += 1; // Round belly shield boost!
 
                             displayPlayedCardInArena(card, state.ai.name);
                             sound.play('heal');
-                            showSkillBanner('【暴食做菜】外公做了八菜一汤！护甲+1！');
-                            showFloatingText('ai', '+1 威严 +1 护甲', 'text-emerald-400');
-                            logBattle(`🍲 【外公】发动【暴食做菜】：享用大鱼大肉，威严+1，因圆滚滚的肚皮获得1点护甲！`, 'text-emerald-300 font-bold');
-
-                            // Force heavy dish onto player!
-                            const extraCard = drawCard(state.player);
-                            if (extraCard) {
-                                logBattle(`🍛 外公硬生生把沉重的【大鱼大肉菜肴】强塞入你的手牌！`, 'text-amber-300');
-                            }
+                            showFloatingText('ai', '+1 威严', 'text-emerald-400');
+                            logBattle(`🍵 【外公】吃了保养补品，威严值+1！`, 'text-emerald-300 font-bold');
 
                             renderAll();
                             playedCard = true;
-                            await delay(1400, currentRunId);
+                            await delay(1300, currentRunId);
                         }
                     }
 
@@ -1075,61 +1153,75 @@
                             logBattle(`🛡️ ${state.ai.name} 穿戴了装备【${card.name}】！`, 'text-amber-300');
                             renderAll();
                             playedCard = true;
-                            await delay(1300, currentRunId);
+                            await delay(1200, currentRunId);
                         }
                     }
 
-                    // 3. Play Trick Cards (Draw Two, Dismantle, Steal)
+                    // 3. Play Trick Cards
                     if (!playedCard) {
-                        const trickIdx = state.ai.hand.findIndex(c => c.id === 'draw_two' || c.id === 'dismantle' || c.id === 'steal');
+                        const trickIdx = state.ai.hand.findIndex(c => c.id === 'draw_two' || c.id === 'dismantle' || c.id === 'steal' || c.id === 'package');
                         if (trickIdx !== -1) {
                             const card = state.ai.hand.splice(trickIdx, 1)[0];
                             state.discardPile.push(card);
                             displayPlayedCardInArena(card, state.ai.name);
                             sound.play('skill');
 
-                            if (card.id === 'draw_two') {
-                                logBattle(`✨ ${state.ai.name} 使用了【${card.name}】，摸取2张牌！`, 'text-amber-300');
+                            if (card.id === 'draw_two' || card.id === 'package') {
+                                logBattle(`✨ ${state.ai.name} 打出了【${card.name}】，额外摸取2张卡牌！`, 'text-amber-300');
                                 drawCard(state.ai);
                                 drawCard(state.ai);
                             } else if (card.id === 'dismantle' && state.player.hand.length > 0) {
                                 state.player.hand.pop();
-                                logBattle(`🗑️ ${state.ai.name} 使用了【${card.name}】，弃置了你1张手牌！`, 'text-stone-300');
+                                logBattle(`🗑️ ${state.ai.name} 打出了【${card.name}】，弃置了你1张手牌！`, 'text-stone-300');
                             } else if (card.id === 'steal' && state.player.hand.length > 0) {
                                 const stolen = state.player.hand.pop();
                                 state.ai.hand.push(stolen);
-                                logBattle(`🥷 ${state.ai.name} 使用了【${card.name}】，抽取了你1张手牌！`, 'text-purple-300');
+                                logBattle(`🥷 ${state.ai.name} 打出了【${card.name}】，抽取了你1张手牌！`, 'text-purple-300');
                             }
-                            renderAll();
-                            playedCard = true;
-                            await delay(1400, currentRunId);
-                        }
-                    }
-
-                    // 4. Play Attack Cards (表达主见 / 据理力争) -> TRIGGERS PLAYER RESPONSE MODAL!
-                    if (!playedCard) {
-                        const atkIdx = state.ai.hand.findIndex(c => c.id === 'strike' || c.id === 'duel');
-                        if (atkIdx !== -1) {
-                            const card = state.ai.hand.splice(atkIdx, 1)[0];
-                            state.discardPile.push(card);
-                            displayPlayedCardInArena(card, state.ai.name);
-                            sound.play('strike');
-                            logBattle(`⚔️ ${state.ai.name} 对你打出了【${card.name}】！`, 'text-rose-400 font-bold');
-
-                            // Trigger Async Player Response Modal
-                            renderAll();
-                            const playerDefended = await promptPlayerResponseModal(card);
-
-                            if (playerDefended) {
-                                logBattle('🛡️ 你成功化解了对手的攻击！', 'text-sky-300 font-bold');
-                                showFloatingText('player', '成功化解!', 'text-sky-300');
-                            } else {
-                                applyDamage(state.player, 1, card.name);
-                            }
-
                             renderAll();
                             playedCard = true;
                             await delay(1300, currentRunId);
+                        }
+                    }
+
+                    // 4. Play Attack Cards (表达主见 / 据理力争) -> Check Multi-Strike Rule
+                    if (!playedCard) {
+                        const atkIdx = state.ai.hand.findIndex(c => c.id === 'strike' || c.id === 'duel');
+                        if (atkIdx !== -1) {
+                            const cardCandidate = state.ai.hand[atkIdx];
+                            const hasRepeater = state.ai.equip.weapon && state.ai.equip.weapon.id === 'repeater';
+
+                            // Check strike limit for AI
+                            if (cardCandidate.id === 'strike' && state.ai.strikeCountThisTurn >= 1 && !hasRepeater) {
+                                // Cannot play another strike without repeater
+                                playedCard = false;
+                            } else {
+                                const card = state.ai.hand.splice(atkIdx, 1)[0];
+                                state.discardPile.push(card);
+                                displayPlayedCardInArena(card, state.ai.name);
+                                sound.play('strike');
+
+                                if (card.id === 'strike') {
+                                    state.ai.strikeCountThisTurn += 1;
+                                }
+
+                                logBattle(`⚔️ ${state.ai.name} 对你打出了【${card.name}】！`, 'text-rose-400 font-bold');
+
+                                // Trigger Async Player Response Modal
+                                renderAll();
+                                const playerDefended = await promptPlayerResponseModal(card);
+
+                                if (playerDefended) {
+                                    logBattle('🛡️️ 你成功化解了对手的攻击！', 'text-sky-300 font-bold');
+                                    showFloatingText('player', '成功化解!', 'text-sky-300');
+                                } else {
+                                    applyDamage(state.player, 1, card.name);
+                                }
+
+                                renderAll();
+                                playedCard = true;
+                                await delay(1200, currentRunId);
+                            }
                         }
                     }
 
@@ -1145,7 +1237,7 @@
                 }
 
                 logBattle(`⌛ ${state.ai.name} 结束了回合。`);
-                await delay(800, currentRunId);
+                await delay(700, currentRunId);
 
                 // Pass Turn back to Player
                 startPlayerTurn();
@@ -1155,14 +1247,13 @@
                     console.log("Obsolete AI thread cleanly terminated by new game session.");
                 } else {
                     console.error("AI turn error:", err);
-                    // Safe recovery fallback to prevent lockup
                     startPlayerTurn();
                 }
             }
         }
 
         /* ==========================================================================
-           7. DEFENSIVE RESPONSE MODAL PROMPT (NEVER FREEZE)
+           7. DEFENSIVE RESPONSE MODAL PROMPT
            ========================================================================== */
         function promptPlayerResponseModal(attackingCard) {
             return new Promise((resolve) => {
@@ -1175,10 +1266,10 @@
                 const actions = document.getElementById('response-actions');
 
                 title.innerText = `${state.ai.name} 打出了【${attackingCard.name}】！`;
-                desc.innerText = `需要打出【巧妙化解】或使用特技化解伤害。`;
+                desc.innerText = `请打出【巧妙化解】规避伤害，或选择硬抗承受结果。`;
                 actions.innerHTML = '';
 
-                // Option 1: Play Dodge Card (if present or if Slacker hero skill)
+                // Option 1: Play Dodge Card (or Slacker skill)
                 const dodgeCardIdx = state.player.hand.findIndex(c => c.id === 'dodge');
                 const canSlackerDodge = state.selectedStudent === 'slacker' && state.player.hand.length > 0;
 
@@ -1200,21 +1291,21 @@
                     btn.onclick = () => {
                         const c = state.player.hand.pop();
                         state.discardPile.push(c);
-                        logBattle('💻 【网课大神】触发【偷懒关麦】：用1张手牌成功当【巧妙化解】化解伤害！', 'text-sky-300');
+                        logBattle('💻 【网课大神】触发【偷懒关麦】：用1张手牌成功化解伤害！', 'text-sky-300');
                         modal.classList.add('hidden');
                         resolve(true);
                     };
                     actions.appendChild(btn);
                 }
 
-                // Option 2: Check Headphones Armor Auto Defense
+                // Option 2: Headphones Armor Auto Defense Check
                 if (state.player.equip.armor && state.player.equip.armor.id === 'headphones') {
                     if (Math.random() < 0.5) {
                         const btn = document.createElement('button');
                         btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow transition animate-pulse';
                         btn.innerText = '🎧 触发【降噪耳机】自动防御！';
                         btn.onclick = () => {
-                            logBattle('🎧 你的防具【降噪耳机】成功阻挡并隔绝了精神伤害！', 'text-blue-300');
+                            logBattle('🎧 你的防具【降噪耳机】成功阻挡了伤害！', 'text-blue-300');
                             modal.classList.add('hidden');
                             resolve(true);
                         };
@@ -1237,10 +1328,11 @@
         }
 
         /* ==========================================================================
-           8. PLAYER ACTIONS & DAMAGE SYSTEM
+           8. PLAYER ACTIONS & INTERACTIVE DISCARD DISPATCHER
            ========================================================================== */
         function startPlayerTurn() {
             state.gameState = GAME_STATES.PLAYER_TURN;
+            state.player.strikeCountThisTurn = 0; // Reset player strike count for new turn
             pushSnapshot();
 
             logBattle('👉 你的回合开始！摸2张牌。', 'text-blue-300 font-bold');
@@ -1265,9 +1357,24 @@
 
         function playSelectedCard() {
             if (state.selectedCardIdx === null || state.gameState !== GAME_STATES.PLAYER_TURN) return;
-            pushSnapshot();
 
             const card = state.player.hand[state.selectedCardIdx];
+
+            // --------------------------------------------------------------------------
+            // RULE CHECK: Restrict "表达主见" (Strike) count per turn unless equipped with Repeater
+            // --------------------------------------------------------------------------
+            if (card.id === 'strike') {
+                const hasRepeater = state.player.equip.weapon && state.player.equip.weapon.id === 'repeater';
+                if (state.player.strikeCountThisTurn >= 1 && !hasRepeater) {
+                    logBattle('⚠️ 每回合默认只能打出1张【表达主见】！如需连续表达，请装备【连发复读机】！', 'text-amber-400 font-bold');
+                    showFloatingText('player', '每回合限用1张表达主见!', 'text-amber-400');
+                    sound.play('hit');
+                    return; // Block execution
+                }
+            }
+
+            pushSnapshot();
+
             state.player.hand.splice(state.selectedCardIdx, 1);
             state.selectedCardIdx = null;
 
@@ -1276,7 +1383,12 @@
             if (card.type === 'weapon') {
                 state.player.equip.weapon = card;
                 sound.play('skill');
-                logBattle(`🗡️ 你装备了武器【${card.name}】！`, 'text-amber-300');
+                if (card.id === 'repeater') {
+                    logBattle(`📻 你装备了专属武器【连发复读机】！本回合可无限制连续打出【表达主见】！`, 'text-amber-300 font-bold');
+                    showFloatingText('player', '解除表达限制!', 'text-amber-300');
+                } else {
+                    logBattle(`🗡️ 你装备了武器【${card.name}】！`, 'text-amber-300');
+                }
             } else if (card.type === 'armor') {
                 state.player.equip.armor = card;
                 sound.play('skill');
@@ -1291,7 +1403,7 @@
                 sound.play('heal');
                 showFloatingText('player', '+1 精神', 'text-emerald-400');
                 logBattle(`🍵 你使用了【${card.name}】，精神值+1！`, 'text-emerald-300');
-            } else if (card.id === 'draw_two') {
+            } else if (card.id === 'draw_two' || card.id === 'package') {
                 state.discardPile.push(card);
                 sound.play('skill');
                 drawCard(state.player);
@@ -1300,6 +1412,11 @@
             } else if (card.id === 'strike' || card.id === 'duel') {
                 state.discardPile.push(card);
                 sound.play('strike');
+
+                if (card.id === 'strike') {
+                    state.player.strikeCountThisTurn += 1;
+                }
+
                 logBattle(`💥 你对 ${state.ai.name} 打出了【${card.name}】！`, 'text-blue-400 font-bold');
 
                 let dmg = 1;
@@ -1308,7 +1425,7 @@
                 // AI Defense check
                 let aiDefended = false;
                 const aiDodgeIdx = state.ai.hand.findIndex(c => c.id === 'dodge');
-                if (aiDodgeIdx !== -1 && Math.random() < 0.75) {
+                if (aiDodgeIdx !== -1 && Math.random() < 0.7) {
                     const dodgeCard = state.ai.hand.splice(aiDodgeIdx, 1)[0];
                     state.discardPile.push(dodgeCard);
                     aiDefended = true;
@@ -1337,12 +1454,80 @@
             checkGameOver();
         }
 
+        function handlePlayerEndTurnClick() {
+            if (state.gameState !== GAME_STATES.PLAYER_TURN) return;
+
+            const maxHand = state.selectedStudent === 'slacker' ? state.player.hp + 1 : state.player.hp;
+            const currentHandCount = state.player.hand.length;
+
+            if (currentHandCount > maxHand) {
+                // Enter Interactive Discard Mode
+                state.gameState = GAME_STATES.PLAYER_DISCARD;
+                state.selectedDiscardIndices = [];
+                state.selectedCardIdx = null;
+                logBattle(`🗑️ 进入【互动弃牌模式】：手牌数(${currentHandCount})超出上限(${maxHand})，请选择 ${currentHandCount - maxHand} 张手牌弃置！`, 'text-rose-300 font-bold');
+                renderAll();
+            } else {
+                // No excess cards, directly end turn and pass to AI
+                finishPlayerTurnAndPassToAi();
+            }
+        }
+
+        function toggleDiscardSelection(idx) {
+            if (state.gameState !== GAME_STATES.PLAYER_DISCARD) return;
+
+            const pos = state.selectedDiscardIndices.indexOf(idx);
+            if (pos !== -1) {
+                state.selectedDiscardIndices.splice(pos, 1);
+            } else {
+                const maxHand = state.selectedStudent === 'slacker' ? state.player.hp + 1 : state.player.hp;
+                const neededCount = state.player.hand.length - maxHand;
+
+                if (state.selectedDiscardIndices.length < neededCount) {
+                    state.selectedDiscardIndices.push(idx);
+                }
+            }
+            renderPlayer();
+        }
+
+        function confirmInteractiveDiscard() {
+            if (state.gameState !== GAME_STATES.PLAYER_DISCARD) return;
+
+            const maxHand = state.selectedStudent === 'slacker' ? state.player.hp + 1 : state.player.hp;
+            const neededCount = state.player.hand.length - maxHand;
+
+            if (state.selectedDiscardIndices.length !== neededCount) return;
+
+            pushSnapshot();
+
+            // Sort indices descending to avoid splice index shifting
+            const sortedIndices = [...state.selectedDiscardIndices].sort((a, b) => b - a);
+            const discardedNames = [];
+
+            sortedIndices.forEach(i => {
+                const card = state.player.hand.splice(i, 1)[0];
+                state.discardPile.push(card);
+                discardedNames.push(card.name);
+            });
+
+            logBattle(`🗑️ 你自主弃置了 ${discardedNames.length} 张手牌：【${discardedNames.join('】、【')}】。`, 'text-stone-300');
+
+            state.selectedDiscardIndices = [];
+            finishPlayerTurnAndPassToAi();
+        }
+
+        function finishPlayerTurnAndPassToAi() {
+            state.selectedCardIdx = null;
+            state.selectedDiscardIndices = [];
+            runAiTurn();
+        }
+
         function applyDamage(target, amount, sourceName) {
             // Check Armor Shield on AI
             if (target.id === 'ai' && target.shield > 0) {
                 target.shield -= 1;
                 sound.play('hit');
-                showFloatingText('ai', '护甲抵消!', 'text-cyan-300');
+                showFloatingText('ai', '肚皮护甲抵消!', 'text-cyan-300');
                 logBattle(`🛡️ ${target.name} 的肚皮护甲抵消了1点伤害！`, 'text-cyan-300 font-bold');
                 return;
             }
@@ -1365,21 +1550,6 @@
             }
 
             checkGameOver();
-        }
-
-        function playerEndTurn() {
-            if (state.gameState !== GAME_STATES.PLAYER_TURN) return;
-
-            // Player Discard Phase down to current HP
-            const maxHand = state.selectedStudent === 'slacker' ? state.player.hp + 1 : state.player.hp;
-            while (state.player.hand.length > maxHand) {
-                const discarded = state.player.hand.pop();
-                state.discardPile.push(discarded);
-                logBattle(`🗑️ 你弃置了超出上限的手牌【${discarded.name}】。`);
-            }
-
-            state.selectedCardIdx = null;
-            runAiTurn();
         }
 
         function checkGameOver() {
@@ -1413,7 +1583,7 @@
                 icon.innerText = '📉';
                 title.innerText = '阵地失守...';
                 title.className = 'text-2xl font-black text-rose-500 mb-2';
-                desc.innerText = `很遗憾，在【${state.ai.name}】的强力连攻下，你的精神值归零。请老实写一份800字检讨...`;
+                desc.innerText = `很遗憾，在【${state.ai.name}】的强力连攻下，你的精神值归零。请老实写一份检讨...`;
             }
             modal.classList.remove('hidden');
         }
@@ -1497,7 +1667,7 @@
         }
 
         function startGame() {
-            // CRITICAL BUGFIX: Increment runId token to immediately kill obsolete async loops
+            // Increment runId token to immediately cancel obsolete async loops
             state.runId++;
 
             document.getElementById('modal-char-select').classList.add('hidden');
@@ -1512,6 +1682,7 @@
                 name: studData.name,
                 hp: studData.maxHp,
                 maxHp: studData.maxHp,
+                strikeCountThisTurn: 0,
                 hand: [],
                 equip: { weapon: null, armor: null, treasure: null }
             };
@@ -1522,6 +1693,7 @@
                 hp: oppData.maxHp,
                 maxHp: oppData.maxHp,
                 shield: 0,
+                strikeCountThisTurn: 0,
                 hand: [],
                 equip: { weapon: null, armor: null, treasure: null }
             };
@@ -1535,6 +1707,7 @@
             state.discardPile = [];
             state.gameState = GAME_STATES.PLAYER_TURN;
             state.selectedCardIdx = null;
+            state.selectedDiscardIndices = [];
             state.historyStack = [];
             state.isGameOver = false;
 
